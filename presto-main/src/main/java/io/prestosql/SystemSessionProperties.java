@@ -36,6 +36,7 @@ import static io.prestosql.spi.session.PropertyMetadata.*;
 import static io.prestosql.spi.type.BigintType.BIGINT;
 import static io.prestosql.spi.type.BooleanType.BOOLEAN;
 import static io.prestosql.spi.type.IntegerType.INTEGER;
+import static io.prestosql.spi.type.VarcharType.VARCHAR;
 import static io.prestosql.sql.analyzer.FeaturesConfig.JoinReorderingStrategy.ELIMINATE_CROSS_JOINS;
 import static io.prestosql.sql.analyzer.FeaturesConfig.JoinReorderingStrategy.NONE;
 import static java.lang.Math.min;
@@ -112,6 +113,7 @@ public final class SystemSessionProperties
     public static final String SKIP_REDUNDANT_SORT = "skip_redundant_sort";
     public static final String WORK_PROCESSOR_PIPELINES = "work_processor_pipelines";
     public static final String ENABLE_DYNAMIC_FILTERING = "enable_dynamic_filtering";
+    public static final String QUERY_MAX_DATA_SIZE = "query_max_data_size";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -503,7 +505,16 @@ public final class SystemSessionProperties
                         ENABLE_DYNAMIC_FILTERING,
                         "Enable dynamic filtering",
                         featuresConfig.isEnableDynamicFiltering(),
-                        false));
+                        false),
+                new PropertyMetadata<>(
+                        QUERY_MAX_DATA_SIZE,
+                        "Maximum data size of a query",
+                        VARCHAR,
+                        DataSize.class,
+                        queryManagerConfig.getQueryMaxDataSize(),
+                        true,
+                        value -> DataSize.valueOf((String) value),
+                        DataSize::toString));
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -896,8 +907,12 @@ public final class SystemSessionProperties
         return session.getSystemProperty(WORK_PROCESSOR_PIPELINES, Boolean.class);
     }
 
-    public static boolean isEnableDynamicFiltering(Session session)
-    {
+    public static boolean isEnableDynamicFiltering(Session session) {
         return session.getSystemProperty(ENABLE_DYNAMIC_FILTERING, Boolean.class);
+    }
+
+    public static DataSize getQueryMaxDataSize(Session session)
+    {
+        return session.getSystemProperty(QUERY_MAX_DATA_SIZE, DataSize.class);
     }
 }
