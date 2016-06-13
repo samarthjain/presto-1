@@ -101,6 +101,7 @@ import static org.apache.parquet.column.ParquetProperties.WriterVersion.PARQUET_
 import static org.apache.parquet.hadoop.ParquetOutputFormat.COMPRESSION;
 import static org.apache.parquet.hadoop.ParquetOutputFormat.ENABLE_DICTIONARY;
 import static org.apache.parquet.hadoop.ParquetOutputFormat.WRITER_VERSION;
+import static org.apache.parquet.hadoop.metadata.CompressionCodecName.BROTLI;
 import static org.apache.parquet.hadoop.metadata.CompressionCodecName.GZIP;
 import static org.apache.parquet.hadoop.metadata.CompressionCodecName.LZ4;
 import static org.apache.parquet.hadoop.metadata.CompressionCodecName.LZO;
@@ -110,6 +111,8 @@ import static org.apache.parquet.hadoop.metadata.CompressionCodecName.ZSTD;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+
+
 
 public class ParquetTester
 {
@@ -130,7 +133,7 @@ public class ParquetTester
     public static ParquetTester quickParquetTester()
     {
         ParquetTester parquetTester = new ParquetTester();
-        parquetTester.compressions = ImmutableSet.of(GZIP);
+        parquetTester.compressions = ImmutableSet.of(GZIP, BROTLI);
         parquetTester.versions = ImmutableSet.of(PARQUET_1_0);
         parquetTester.sessions = ImmutableSet.of(SESSION);
         return parquetTester;
