@@ -38,9 +38,9 @@ public class MySqlClientModule
     @Override
     protected void setup(Binder binder)
     {
+        configBinder(binder).bindConfig(MySqlConfig.class);
         binder.bind(JdbcClient.class).to(MySqlClient.class).in(Scopes.SINGLETON);
         ensureCatalogIsEmpty(buildConfigObject(BaseJdbcConfig.class).getConnectionUrl());
-        configBinder(binder).bindConfig(MySqlConfig.class);
     }
 
     private static void ensureCatalogIsEmpty(String connectionUrl)
@@ -49,7 +49,7 @@ public class MySqlClientModule
             Driver driver = new Driver();
             Properties urlProperties = driver.parseURL(connectionUrl, null);
             checkArgument(urlProperties != null, "Invalid JDBC URL for MySQL connector");
-            checkArgument(driver.database(urlProperties) == null, "Database (catalog) must not be specified in JDBC URL for MySQL connector");
+            //checkArgument(driver.database(urlProperties) == null, "Database (catalog) must not be specified in JDBC URL for MySQL connector");
         }
         catch (SQLException e) {
             throw new RuntimeException(e);
