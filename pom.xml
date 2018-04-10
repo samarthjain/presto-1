@@ -1235,6 +1235,7 @@
                                 <excludes combine.children="append">
                                     <!-- TODO: fix this in Airlift resolver -->
                                     <exclude>org.codehaus.plexus:plexus-utils</exclude>
+                                    <exclude>org.scala-lang:scala-library</exclude>
                                 </excludes>
                             </requireUpperBoundDeps>
                         </rules>
