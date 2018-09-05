@@ -350,7 +350,7 @@ public final class Session
                 queryId,
                 Optional.of(transactionId),
                 clientTransactionSupport,
-                new Identity(identity.getUser(), identity.getPrincipal(), roles.build(), identity.getExtraCredentials()),
+                new Identity(identity.getUser(), identity.getPrincipal(), roles.build(), identity.getExtraCredentials(), identity.getSessionPropertiesByCatalog()),
                 source,
                 catalog,
                 schema,
@@ -425,7 +425,8 @@ public final class Session
 
     public ConnectorSession toConnectorSession()
     {
-        return new FullConnectorSession(this, identity.toConnectorIdentity());
+        return new FullConnectorSession(this,
+                catalog.isPresent() ? identity.toConnectorIdentity(catalog.get()) : identity.toConnectorIdentity());
     }
 
     public ConnectorSession toConnectorSession(CatalogName catalogName)

@@ -165,6 +165,8 @@ public class HiveConfig
     private long fileStatusCacheMaxSize = 1000 * 1000;
     private List<String> fileStatusCacheTables = ImmutableList.of();
 
+    private List<String> s3RoleMappings;
+
     public int getMaxInitialSplits()
     {
         return maxInitialSplits;
@@ -1322,4 +1324,23 @@ public class HiveConfig
     {
         return temporaryStagingDirectoryPath;
     }
+
+    public List<String> getS3RoleMappings()
+    {
+        return s3RoleMappings;
+    }
+
+    @Config("hive.s3.role.mappings")
+    public HiveConfig setS3RoleMappings(String s3RoleMappings)
+    {
+        this.s3RoleMappings = (s3RoleMappings == null) ? null : Splitter.on(',').trimResults().omitEmptyStrings().splitToList(s3RoleMappings);
+        return this;
+    }
+
+    public HiveConfig setS3RoleMappings(List<String> s3RoleMappings)
+    {
+        this.s3RoleMappings = (s3RoleMappings == null) ? null : ImmutableList.copyOf(s3RoleMappings);
+        return this;
+    }
+
 }

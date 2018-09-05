@@ -26,19 +26,13 @@ import io.prestosql.sql.analyzer.FeaturesConfig.JoinDistributionType;
 import io.prestosql.sql.analyzer.FeaturesConfig.JoinReorderingStrategy;
 
 import javax.inject.Inject;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.prestosql.spi.StandardErrorCode.INVALID_SESSION_PROPERTY;
-import static io.prestosql.spi.session.PropertyMetadata.booleanProperty;
-import static io.prestosql.spi.session.PropertyMetadata.dataSizeProperty;
-import static io.prestosql.spi.session.PropertyMetadata.durationProperty;
-import static io.prestosql.spi.session.PropertyMetadata.enumProperty;
-import static io.prestosql.spi.session.PropertyMetadata.integerProperty;
-import static io.prestosql.spi.session.PropertyMetadata.stringProperty;
+import static io.prestosql.spi.session.PropertyMetadata.*;
 import static io.prestosql.spi.type.BigintType.BIGINT;
 import static io.prestosql.spi.type.BooleanType.BOOLEAN;
 import static io.prestosql.spi.type.IntegerType.INTEGER;

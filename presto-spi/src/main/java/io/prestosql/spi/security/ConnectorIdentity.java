@@ -28,18 +28,20 @@ public class ConnectorIdentity
     private final Optional<Principal> principal;
     private final Optional<SelectedRole> role;
     private final Map<String, String> extraCredentials;
+    private final Map<String, String> sessionProperties;
 
     public ConnectorIdentity(String user, Optional<Principal> principal, Optional<SelectedRole> role)
     {
-        this(user, principal, role, emptyMap());
+        this(user, principal, role, emptyMap(), emptyMap());
     }
 
-    public ConnectorIdentity(String user, Optional<Principal> principal, Optional<SelectedRole> role, Map<String, String> extraCredentials)
+    public ConnectorIdentity(String user, Optional<Principal> principal, Optional<SelectedRole> role, Map<String, String> extraCredentials, Map<String, String> sessionProperties)
     {
         this.user = requireNonNull(user, "user is null");
         this.principal = requireNonNull(principal, "principal is null");
         this.role = requireNonNull(role, "role is null");
         this.extraCredentials = unmodifiableMap(new HashMap<>(requireNonNull(extraCredentials, "extraCredentials is null")));
+        this.sessionProperties = sessionProperties;
     }
 
     public String getUser()
@@ -60,6 +62,11 @@ public class ConnectorIdentity
     public Map<String, String> getExtraCredentials()
     {
         return extraCredentials;
+    }
+
+    public Map<String, String> getSessionProperties()
+    {
+        return sessionProperties;
     }
 
     @Override

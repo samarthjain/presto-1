@@ -29,6 +29,7 @@ public class Identity
     private final Optional<Principal> principal;
     private final Map<String, SelectedRole> roles;
     private final Map<String, String> extraCredentials;
+    private Map<String, Map<String, String>> sessionPropertiesByCatalog = new HashMap<>();
 
     public Identity(String user, Optional<Principal> principal)
     {
@@ -42,10 +43,16 @@ public class Identity
 
     public Identity(String user, Optional<Principal> principal, Map<String, SelectedRole> roles, Map<String, String> extraCredentials)
     {
+        this(user, principal, roles, extraCredentials, emptyMap());
+    }
+
+    public Identity(String user, Optional<Principal> principal, Map<String, SelectedRole> roles, Map<String, String> extraCredentials, Map<String, Map<String, String>> sessionPropertiesByCatalog)
+    {
         this.user = requireNonNull(user, "user is null");
         this.principal = requireNonNull(principal, "principal is null");
         this.roles = unmodifiableMap(requireNonNull(roles, "roles is null"));
         this.extraCredentials = unmodifiableMap(new HashMap<>(requireNonNull(extraCredentials, "extraCredentials is null")));
+        this.sessionPropertiesByCatalog = sessionPropertiesByCatalog;
     }
 
     public String getUser()
@@ -70,13 +77,23 @@ public class Identity
 
     public ConnectorIdentity toConnectorIdentity()
     {
-        return new ConnectorIdentity(user, principal, Optional.empty(), extraCredentials);
+        return new ConnectorIdentity(user, principal, Optional.empty(), extraCredentials, emptyMap());
     }
 
     public ConnectorIdentity toConnectorIdentity(String catalog)
     {
         requireNonNull(catalog, "catalog is null");
-        return new ConnectorIdentity(user, principal, Optional.ofNullable(roles.get(catalog)), extraCredentials);
+        return new ConnectorIdentity(user, principal, Optional.ofNullable(roles.get(catalog)), extraCredentials, sessionPropertiesByCatalog.get(catalog));
+    }
+
+    public void setSessionPropertiesByCatalog(Map<String, Map<String, String>> sessionPropertiesByCatalog)
+    {
+        this.sessionPropertiesByCatalog = sessionPropertiesByCatalog;
+    }
+
+    public Map<String, Map<String, String>> getSessionPropertiesByCatalog()
+    {
+        return sessionPropertiesByCatalog;
     }
 
     @Override

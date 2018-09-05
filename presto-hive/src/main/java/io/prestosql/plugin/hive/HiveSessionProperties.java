@@ -78,6 +78,7 @@ public final class HiveSessionProperties
     private static final String S3_SELECT_PUSHDOWN_ENABLED = "s3_select_pushdown_enabled";
     private static final String TEMPORARY_STAGING_DIRECTORY_ENABLED = "temporary_staging_directory_enabled";
     private static final String TEMPORARY_STAGING_DIRECTORY_PATH = "temporary_staging_directory_path";
+    public static final String AWS_IAM_ROLE = "aws_iam_role";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -308,6 +309,11 @@ public final class HiveSessionProperties
                         TEMPORARY_STAGING_DIRECTORY_PATH,
                         "Temporary staging directory location",
                         hiveConfig.getTemporaryStagingDirectoryPath(),
+                        false),
+                stringProperty(
+                        AWS_IAM_ROLE,
+                        "AWS IAM Role for S3",
+                        "",
                         false));
     }
 

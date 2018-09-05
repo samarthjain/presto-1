@@ -320,7 +320,7 @@ public class AccessControlManager
 
         CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, tableName.getCatalogName());
         if (entry != null) {
-            authorizationCheck(() -> entry.getAccessControl().checkCanSetTableComment(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(), tableName.asSchemaTableName()));
+            authorizationCheck(() -> entry.getAccessControl().checkCanSetTableComment(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), tableName.asSchemaTableName()));
         }
     }
 
@@ -336,7 +336,7 @@ public class AccessControlManager
 
         CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, schema.getCatalogName());
         if (entry != null) {
-            authorizationCheck(() -> entry.getAccessControl().checkCanShowTablesMetadata(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(), schema.getSchemaName()));
+            authorizationCheck(() -> entry.getAccessControl().checkCanShowTablesMetadata(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(schema.getCatalogName()), schema.getSchemaName()));
         }
     }
 
@@ -370,7 +370,7 @@ public class AccessControlManager
 
         CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, table.getCatalogName());
         if (entry != null) {
-            authorizationCheck(() -> entry.getAccessControl().checkCanShowColumnsMetadata(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(), table.getSchemaTableName()));
+            authorizationCheck(() -> entry.getAccessControl().checkCanShowColumnsMetadata(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(table.getCatalogName()), table.getSchemaTableName()));
         }
     }
 
@@ -389,7 +389,7 @@ public class AccessControlManager
 
         CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, table.getCatalogName());
         if (entry != null) {
-            columns = entry.getAccessControl().filterColumns(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(), table.getSchemaTableName(), columns);
+            columns = entry.getAccessControl().filterColumns(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(table.getCatalogName()), table.getSchemaTableName(), columns);
         }
         return columns;
     }
