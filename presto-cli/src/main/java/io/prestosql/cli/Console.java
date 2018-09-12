@@ -341,6 +341,9 @@ public class Console
         }
 
         try (Query query = queryRunner.startQuery(finalSql)) {
+            if (!showProgress) {
+                System.err.println(query.getInfoURI());
+            }
             boolean success = query.renderOutput(out, errorChannel, outputFormat, usePager, showProgress);
 
             ClientSession session = queryRunner.getSession();
