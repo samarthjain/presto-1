@@ -21,6 +21,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Streams;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.ListenableFuture;
+import io.airlift.log.Logger;
 import io.prestosql.plugin.hive.HdfsEnvironment.HdfsContext;
 import io.prestosql.plugin.hive.HiveBucketing.HiveBucketFilter;
 import io.prestosql.plugin.hive.HiveSplit.BucketConversion;
@@ -121,6 +122,9 @@ public class BackgroundHiveSplitLoader
     private final ConnectorSession session;
     private final ConcurrentLazyQueue<HivePartitionMetadata> partitions;
     private final Deque<Iterator<InternalHiveSplit>> fileIterators = new ConcurrentLinkedDeque<>();
+    private PrestoHdfsCache prestoHdfsCache;
+    private boolean isHdfsDeployed;
+    private static final Logger log = Logger.get(BackgroundHiveSplitLoader.class);
 
     // Purpose of this lock:
     // * Write lock: when you need a consistent view across partitions, fileIterators, and hiveSplitSource.
@@ -153,7 +157,9 @@ public class BackgroundHiveSplitLoader
             DirectoryLister directoryLister,
             Executor executor,
             int loaderConcurrency,
-            boolean recursiveDirWalkerEnabled)
+            boolean recursiveDirWalkerEnabled,
+            PrestoHdfsCache prestoHdfsCache,
+            boolean isHdfsDeployed)
     {
         this.table = table;
         this.compactEffectivePredicate = compactEffectivePredicate;
@@ -167,6 +173,8 @@ public class BackgroundHiveSplitLoader
         this.executor = executor;
         this.partitions = new ConcurrentLazyQueue<>(partitions);
         this.hdfsContext = new HdfsContext(session, table.getDatabaseName(), table.getTableName());
+        this.prestoHdfsCache = prestoHdfsCache;
+        this.isHdfsDeployed = isHdfsDeployed;
     }
 
     @Override
@@ -297,6 +305,10 @@ public class BackgroundHiveSplitLoader
         FileSystem fs = hdfsEnvironment.getFileSystem(hdfsContext, path);
         boolean s3SelectPushdownEnabled = shouldEnablePushdownForTable(session, table, path.toString(), partition.getPartition());
 
+        if (isHdfsDeployed) {
+            prestoHdfsCache.setS3fs(fs);
+        }
+
         if (inputFormat instanceof SymlinkTextInputFormat) {
             if (tableBucketInfo.isPresent()) {
                 throw new PrestoException(NOT_SUPPORTED, "Bucketed table in SymlinkTextInputFormat is not yet supported");
@@ -415,7 +427,7 @@ public class BackgroundHiveSplitLoader
 
     private Iterator<InternalHiveSplit> createInternalHiveSplitIterator(Path path, FileSystem fileSystem, InternalHiveSplitFactory splitFactory, boolean splittable)
     {
-        return Streams.stream(new HiveFileIterator(table, path, fileSystem, directoryLister, namenodeStats, recursiveDirWalkerEnabled ? RECURSE : IGNORED))
+        return Streams.stream(new HiveFileIterator(table, path, fileSystem, directoryLister, namenodeStats, recursiveDirWalkerEnabled ? RECURSE : IGNORED, isHdfsDeployed, prestoHdfsCache))
                 .map(status -> splitFactory.createInternalHiveSplit(status, splittable))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
@@ -432,7 +444,7 @@ public class BackgroundHiveSplitLoader
         // list all files in the partition
         List<LocatedFileStatus> files = new ArrayList<>(partitionBucketCount);
         try {
-            Iterators.addAll(files, new HiveFileIterator(table, path, fileSystem, directoryLister, namenodeStats, FAIL));
+            Iterators.addAll(files, new HiveFileIterator(table, path, fileSystem, directoryLister, namenodeStats, FAIL, isHdfsDeployed, prestoHdfsCache));
         }
         catch (NestedDirectoryNotAllowedException e) {
             // Fail here to be on the safe side. This seems to be the same as what Hive does

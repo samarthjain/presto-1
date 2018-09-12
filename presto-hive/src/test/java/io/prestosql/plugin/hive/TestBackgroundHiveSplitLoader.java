@@ -327,6 +327,8 @@ public class TestBackgroundHiveSplitLoader
                 new CachingDirectoryLister(new HiveConfig()),
                 EXECUTOR,
                 2,
+                false,
+                new PrestoHdfsCache(),
                 false);
     }
 
@@ -352,6 +354,8 @@ public class TestBackgroundHiveSplitLoader
                 directoryLister,
                 EXECUTOR,
                 2,
+                false,
+                new PrestoHdfsCache(),
                 false);
     }
 
@@ -371,6 +375,8 @@ public class TestBackgroundHiveSplitLoader
                 new CachingDirectoryLister(new HiveConfig()),
                 directExecutor(),
                 2,
+                false,
+                new PrestoHdfsCache(),
                 false);
     }
 

@@ -17,6 +17,8 @@ import com.google.common.collect.AbstractIterator;
 import io.airlift.stats.TimeStat;
 import io.prestosql.plugin.hive.DirectoryLister;
 import io.prestosql.plugin.hive.NamenodeStats;
+import io.prestosql.plugin.hive.PrestoHdfsCache;
+import io.prestosql.plugin.hive.PrestoHdfsCacheStats;
 import io.prestosql.plugin.hive.metastore.Table;
 import io.prestosql.spi.PrestoException;
 import org.apache.hadoop.fs.FileSystem;
@@ -53,6 +55,8 @@ public class HiveFileIterator
     private final NestedDirectoryPolicy nestedDirectoryPolicy;
 
     private Iterator<LocatedFileStatus> remoteIterator = Collections.emptyIterator();
+    private final PrestoHdfsCache prestoHdfsCache;
+    private final boolean isHdfsDeployed;
 
     public HiveFileIterator(
             Table table,
@@ -60,7 +64,9 @@ public class HiveFileIterator
             FileSystem fileSystem,
             DirectoryLister directoryLister,
             NamenodeStats namenodeStats,
-            NestedDirectoryPolicy nestedDirectoryPolicy)
+            NestedDirectoryPolicy nestedDirectoryPolicy,
+            boolean isHdfsDeployed,
+            PrestoHdfsCache prestoHdfsCache)
     {
         paths.addLast(requireNonNull(path, "path is null"));
         this.table = requireNonNull(table, "table is null");
@@ -68,6 +74,8 @@ public class HiveFileIterator
         this.directoryLister = requireNonNull(directoryLister, "directoryLister is null");
         this.namenodeStats = requireNonNull(namenodeStats, "namenodeStats is null");
         this.nestedDirectoryPolicy = requireNonNull(nestedDirectoryPolicy, "nestedDirectoryPolicy is null");
+        this.isHdfsDeployed = isHdfsDeployed;
+        this.prestoHdfsCache = prestoHdfsCache;
     }
 
     @Override
@@ -95,6 +103,18 @@ public class HiveFileIterator
                     }
                 }
 
+                if (isHdfsDeployed) {
+                    try {
+                        Path s3Path = status.getPath();
+                        Path s3OrHdfsPath = prestoHdfsCache.getHdfsPathOrCopyToHdfs(s3Path);
+                        if (!s3OrHdfsPath.equals(s3Path)) {
+                            status = prestoHdfsCache.getLocatedStatus(s3OrHdfsPath);
+                        }
+                    }
+                    catch (IOException ignored) {
+                        //do Nothing
+                    }
+                }
                 return status;
             }
 

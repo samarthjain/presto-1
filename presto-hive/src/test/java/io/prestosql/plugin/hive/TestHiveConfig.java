@@ -127,7 +127,10 @@ public class TestHiveConfig
                 .setFileStatusCacheMaxSize(1000 * 1000)
                 .setFileStatusCacheTables("")
                 .setCollectColumnStatisticsOnWrite(false)
-                .setS3RoleMappings((String) null));
+                .setS3RoleMappings((String) null)
+                .setHdfsCacheEnabled(false)
+                .setHdfsCacheDefaultFs((String) null)
+                .setHdfsCacheReplicationFactor(3));
     }
 
     @Test
@@ -222,6 +225,9 @@ public class TestHiveConfig
                 .put("hive.file-status-cache-expire-time", "30m")
                 .put("hive.collect-column-statistics-on-write", "true")
                 .put("hive.s3.role.mappings", "s3rolemappings")
+                .put("hive.hdfs-cache-default-fs", "hdfs://localhost:8020")
+                .put("hive.hdfs-cache-enabled", "true")
+                .put("hive.hdfs-cache-replication", "10")
                 .build();
 
         HiveConfig expected = new HiveConfig()
@@ -312,7 +318,10 @@ public class TestHiveConfig
                 .setFileStatusCacheMaxSize(1000)
                 .setFileStatusCacheExpireAfterWrite(new Duration(30, TimeUnit.MINUTES))
                 .setCollectColumnStatisticsOnWrite(true)
-                .setS3RoleMappings("s3rolemappings");
+                .setS3RoleMappings("s3rolemappings")
+                .setHdfsCacheDefaultFs("hdfs://localhost:8020")
+                .setHdfsCacheEnabled(true)
+                .setHdfsCacheReplicationFactor(10);
 
         assertFullMapping(properties, expected);
     }
