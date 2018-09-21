@@ -45,6 +45,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.JavaUtils;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat;
@@ -596,9 +597,9 @@ public final class HiveUtil
         throw new VerifyException(format("Unhandled type [%s] for partition: %s", type, partitionName));
     }
 
-    public static boolean isPrestoView(Table table)
+    public static boolean isView(Table table)
     {
-        return "true".equals(table.getParameters().get(PRESTO_VIEW_FLAG));
+        return table.getTableType().equals(TableType.VIRTUAL_VIEW.name());
     }
 
     public static String encodeViewData(ConnectorViewDefinition definition)

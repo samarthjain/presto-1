@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.prestosql.spi.type.TypeSignature;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -28,42 +29,77 @@ import static java.util.Objects.requireNonNull;
 public class ConnectorViewDefinition
 {
     private final String originalSql;
+
+    private final Optional<String> viewExpandedText;
     private final Optional<String> catalog;
     private final Optional<String> schema;
     private final List<ViewColumn> columns;
     private final Optional<String> owner;
     private final boolean runAsInvoker;
+    private final boolean isPrestoView;
 
     @JsonCreator
     public ConnectorViewDefinition(
             @JsonProperty("originalSql") String originalSql,
+            @JsonProperty("viewExpandedText") Optional<String> viewExpandedText,
             @JsonProperty("catalog") Optional<String> catalog,
             @JsonProperty("schema") Optional<String> schema,
             @JsonProperty("columns") List<ViewColumn> columns,
             @JsonProperty("owner") Optional<String> owner,
-            @JsonProperty("runAsInvoker") boolean runAsInvoker)
+            @JsonProperty("runAsInvoker") boolean runAsInvoker,
+            @JsonProperty("isPrestoView") boolean isPrestoView)
     {
         this.originalSql = requireNonNull(originalSql, "originalSql is null");
+        this.viewExpandedText = viewExpandedText;
         this.catalog = requireNonNull(catalog, "catalog is null");
         this.schema = requireNonNull(schema, "schema is null");
         this.columns = unmodifiableList(new ArrayList<>(requireNonNull(columns, "columns is null")));
         this.owner = requireNonNull(owner, "owner is null");
         this.runAsInvoker = runAsInvoker;
-        if (!catalog.isPresent() && schema.isPresent()) {
+        this.isPrestoView = isPrestoView;
+        if (isPrestoView && !catalog.isPresent() && schema.isPresent()) {
             throw new IllegalArgumentException("catalog must be present if schema is present");
         }
         if (runAsInvoker && owner.isPresent()) {
             throw new IllegalArgumentException("owner cannot be present with runAsInvoker");
         }
-        if (columns.isEmpty()) {
+        if (isPrestoView && columns.isEmpty()) {
             throw new IllegalArgumentException("columns list is empty");
         }
+    }
+
+    // constructor for hive views
+    public ConnectorViewDefinition(
+            String originalSql,
+            Optional<String> viewExpandedText,
+            Optional<String> schema,
+            Optional<String> owner)
+    {
+        this(originalSql, viewExpandedText, Optional.empty(), schema, Collections.emptyList(), owner, false, false);
+    }
+
+    // constructor for presto views
+    public ConnectorViewDefinition(
+            String originalSql,
+            Optional<String> catalog,
+            Optional<String> schema,
+            List<ViewColumn> columns,
+            Optional<String> owner,
+            boolean runAsInvoker)
+    {
+        this(originalSql, Optional.empty(), catalog, schema, columns, owner, runAsInvoker, true);
     }
 
     @JsonProperty
     public String getOriginalSql()
     {
         return originalSql;
+    }
+
+    @JsonProperty
+    public Optional<String> getViewExpandedText()
+    {
+        return viewExpandedText;
     }
 
     @JsonProperty
@@ -94,6 +130,12 @@ public class ConnectorViewDefinition
     public boolean isRunAsInvoker()
     {
         return runAsInvoker;
+    }
+
+    @JsonProperty
+    public boolean isPrestoView()
+    {
+        return isPrestoView;
     }
 
     @Override

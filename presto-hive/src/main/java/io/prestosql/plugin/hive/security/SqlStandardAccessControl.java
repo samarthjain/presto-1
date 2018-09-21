@@ -16,6 +16,7 @@ package io.prestosql.plugin.hive.security;
 import com.google.common.collect.ImmutableList;
 import io.prestosql.plugin.hive.HiveCatalogName;
 import io.prestosql.plugin.hive.HiveTransactionHandle;
+import io.prestosql.plugin.hive.HiveUtil;
 import io.prestosql.plugin.hive.metastore.Database;
 import io.prestosql.plugin.hive.metastore.HivePrincipal;
 import io.prestosql.plugin.hive.metastore.SemiTransactionalHiveMetastore;
@@ -222,7 +223,7 @@ public class SqlStandardAccessControl
     {
         // TODO: Implement column level access control
         if (!checkTablePermission(transaction, identity, tableName, SELECT, false)) {
-            denySelectTable(tableName.toString());
+            denySelectTable(tableName.toString(), null, getTableType(transaction, tableName));
         }
     }
 
@@ -483,5 +484,14 @@ public class SqlStandardAccessControl
         SemiTransactionalHiveMetastore metastore = metastoreProvider.apply(((HiveTransactionHandle) transaction));
         return listEnabledTablePrivileges(metastore, tableName.getSchemaName(), tableName.getTableName(), identity)
                 .anyMatch(privilegeInfo -> true);
+    }
+
+    private String getTableType(ConnectorTransactionHandle transaction, SchemaTableName tableName)
+    {
+        SemiTransactionalHiveMetastore metastore = metastoreProvider.apply(((HiveTransactionHandle) transaction));
+        if (HiveUtil.isView(metastore.getTable(tableName.getSchemaName(), tableName.getTableName()).get())) {
+            return "view";
+        }
+        return "table";
     }
 }

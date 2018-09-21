@@ -20,7 +20,6 @@ import com.google.common.collect.Iterables;
 import io.airlift.units.Duration;
 import io.prestosql.plugin.hive.HiveBasicStatistics;
 import io.prestosql.plugin.hive.HiveType;
-import io.prestosql.plugin.hive.HiveViewNotSupportedException;
 import io.prestosql.plugin.hive.PartitionNotFoundException;
 import io.prestosql.plugin.hive.PartitionStatistics;
 import io.prestosql.plugin.hive.SchemaAlreadyExistsException;
@@ -211,14 +210,11 @@ public class ThriftHiveMetastore
     {
         try {
             return retry()
-                    .stopOn(NoSuchObjectException.class, HiveViewNotSupportedException.class)
+                    .stopOn(NoSuchObjectException.class)
                     .stopOnIllegalExceptions()
                     .run("getTable", stats.getGetTable().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
                             Table table = client.getTable(databaseName, tableName);
-                            if (table.getTableType().equals(TableType.VIRTUAL_VIEW.name()) && !isPrestoView(table)) {
-                                throw new HiveViewNotSupportedException(new SchemaTableName(databaseName, tableName));
-                            }
                             return Optional.of(table);
                         }
                     }));
@@ -240,11 +236,6 @@ public class ThriftHiveMetastore
         return ThriftMetastoreUtil.getSupportedColumnStatistics(type);
     }
 
-    private static boolean isPrestoView(Table table)
-    {
-        return "true".equals(table.getParameters().get(PRESTO_VIEW_FLAG));
-    }
-
     @Override
     public PartitionStatistics getTableStatistics(String databaseName, String tableName)
     {
@@ -262,7 +253,7 @@ public class ThriftHiveMetastore
     {
         try {
             return retry()
-                    .stopOn(NoSuchObjectException.class, HiveViewNotSupportedException.class)
+                    .stopOn(NoSuchObjectException.class)
                     .stopOnIllegalExceptions()
                     .run("getTableColumnStatistics", stats.getGetTableColumnStatistics().wrap(() -> {
                         // metacat does not implement getTableColumnStatistics and we do not have the column level stats
@@ -360,7 +351,7 @@ public class ThriftHiveMetastore
     {
         try {
             return retry()
-                    .stopOn(NoSuchObjectException.class, HiveViewNotSupportedException.class)
+                    .stopOn(NoSuchObjectException.class)
                     .stopOnIllegalExceptions()
                     .run("getPartitionColumnStatistics", stats.getGetPartitionColumnStatistics().wrap(() -> {
                         // metacat does not implement getPartitionColumnStatistics and we do not have the column level stats
@@ -713,8 +704,19 @@ public class ThriftHiveMetastore
             return retry()
                     .stopOn(UnknownDBException.class)
                     .stopOnIllegalExceptions()
-                    .run("getAllViews", stats.getGetAllViews().wrap(
-                            () -> getPrestoViews(databaseName)));
+                    .run("getAllViews", stats.getGetAllViews().wrap(() -> {
+                        try (ThriftMetastoreClient client = createMetastoreClient()) {
+                            List<String> tableNames = client.getAllTables(databaseName);
+                            ImmutableList.Builder<String> views = ImmutableList.builder();
+                            for (String tableName : tableNames) {
+                                Table table = client.getTable(databaseName, tableName);
+                                if (table.getTableType().equals(TableType.VIRTUAL_VIEW.name())) {
+                                    views.add(table.getTableName());
+                                }
+                            }
+                            return views.build();
+                        }
+                    }));
         }
         catch (UnknownDBException e) {
             return ImmutableList.of();
