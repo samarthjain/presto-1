@@ -83,7 +83,7 @@ public class BenchmarkResourceGroup
                 group.setHardConcurrencyLimit(queries);
             }
             for (int i = 0; i < queries; i++) {
-                group.run(new MockManagedQueryExecution(10));
+                group.run(new MockManagedQueryExecution(10), false);
             }
         }
 

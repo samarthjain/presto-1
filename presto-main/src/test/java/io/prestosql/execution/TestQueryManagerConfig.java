@@ -16,9 +16,10 @@ package io.prestosql.execution;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import org.testng.annotations.Test;
+
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.testng.annotations.Test;
 
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
@@ -53,6 +54,7 @@ public class TestQueryManagerConfig
                 .setQueryMaxCpuTime(new Duration(1_000_000_000, TimeUnit.DAYS))
                 .setRequiredWorkers(1)
                 .setRequiredWorkersMaxWait(new Duration(5, TimeUnit.MINUTES))
+                .setQueueQueriesWithInsufficientWorkers(false)
                 .setQueryMaxDataSize(new DataSize(100, TERABYTE)));
     }
 
@@ -82,6 +84,8 @@ public class TestQueryManagerConfig
                 .put("query-manager.required-workers", "333")
                 .put("query-manager.required-workers-max-wait", "33m")
                 .put("query.max-data-size", "10GB")
+                .put("query-manager.queue-queries.insufficient-workers", "true")
+                .put("query.max-data-size", "10GB")
                 .build();
 
         QueryManagerConfig expected = new QueryManagerConfig()
@@ -106,7 +110,8 @@ public class TestQueryManagerConfig
                 .setQueryMaxCpuTime(new Duration(2, TimeUnit.DAYS))
                 .setRequiredWorkers(333)
                 .setRequiredWorkersMaxWait(new Duration(33, TimeUnit.MINUTES))
-                .setQueryMaxDataSize(new DataSize(10, GIGABYTE));
+                .setQueryMaxDataSize(new DataSize(10, GIGABYTE))
+                .setQueueQueriesWithInsufficientWorkers(true);
 
         assertFullMapping(properties, expected);
     }
