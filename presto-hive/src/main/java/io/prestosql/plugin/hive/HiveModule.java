@@ -13,6 +13,7 @@
  */
 package io.prestosql.plugin.hive;
 
+import com.facebook.presto.hive.PrestoHdfsCacheStats;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -26,6 +27,7 @@ import io.prestosql.plugin.hive.orc.OrcPageSourceFactory;
 import io.prestosql.plugin.hive.parquet.ParquetPageSourceFactory;
 import io.prestosql.plugin.hive.rcfile.RcFilePageSourceFactory;
 import io.prestosql.plugin.hive.s3.PrestoS3ClientFactory;
+import io.prestosql.plugin.hive.util.HiveFileIterator;
 import io.prestosql.spi.connector.ConnectorNodePartitioningProvider;
 import io.prestosql.spi.connector.ConnectorPageSinkProvider;
 import io.prestosql.spi.connector.ConnectorPageSourceProvider;
@@ -110,6 +112,8 @@ public class HiveModule
         fileWriterFactoryBinder.addBinding().to(RcFileFileWriterFactory.class).in(Scopes.SINGLETON);
 
         configBinder(binder).bindConfig(ParquetFileWriterConfig.class);
+        binder.bind(PrestoHdfsCacheStats.class).toInstance(HiveFileIterator.getHdfsCacheStats());
+        newExporter(binder).export(PrestoHdfsCacheStats.class).as(generator -> generator.generatedNameOf(PrestoHdfsCache.class));
     }
 
     @ForHive
