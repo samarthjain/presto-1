@@ -13,7 +13,6 @@
  */
 package io.prestosql.server;
 
-import com.google.common.collect.Maps;
 import io.prestosql.failuredetector.HeartbeatFailureDetector;
 
 import javax.inject.Inject;
@@ -21,8 +20,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import java.util.Collection;
-
-import static com.google.common.base.Predicates.in;
 
 @Path("/v1/node")
 public class NodeResource
@@ -38,13 +35,27 @@ public class NodeResource
     @GET
     public Collection<HeartbeatFailureDetector.Stats> getNodeStats()
     {
-        return failureDetector.getStats().values();
+        return failureDetector.getStats();
     }
 
     @GET
     @Path("failed")
     public Collection<HeartbeatFailureDetector.Stats> getFailed()
     {
-        return Maps.filterKeys(failureDetector.getStats(), in(failureDetector.getFailed())).values();
+        return failureDetector.getStatsWithFilters(true, false);
+    }
+
+    @GET
+    @Path("active")
+    public Collection<HeartbeatFailureDetector.Stats> getActive()
+    {
+        return failureDetector.getStatsWithFilters(false, false);
+    }
+
+    @GET
+    @Path("decommissioned")
+    public Collection<HeartbeatFailureDetector.Stats> getDecommissioned()
+    {
+        return failureDetector.getStatsWithFilters(true, true);
     }
 }
