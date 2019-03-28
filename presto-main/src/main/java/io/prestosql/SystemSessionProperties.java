@@ -119,6 +119,7 @@ public final class SystemSessionProperties
     private static final String GENIE_ENVIRONMENT = "genie_environment";
     private static final String GENIE_STACK = "genie_stack";
     private static final String GENIE_VERSION = "genie_version";
+    private static final String GENIE_JOB_GROUPING = "genie_job_grouping";
     private static final String QUERY_METADATA = "query_metadata";
 
     private final List<PropertyMetadata<?>> sessionProperties;
@@ -547,6 +548,11 @@ public final class SystemSessionProperties
                         "",
                         true),
                 stringProperty(
+                        GENIE_JOB_GROUPING,
+                        "Genie job grouping set by bdp scheduler",
+                        "",
+                        true),
+                stringProperty(
                         QUERY_METADATA,
                         "A json string representation of query metadata",
                         "{}",
@@ -943,7 +949,8 @@ public final class SystemSessionProperties
         return session.getSystemProperty(WORK_PROCESSOR_PIPELINES, Boolean.class);
     }
 
-    public static boolean isEnableDynamicFiltering(Session session) {
+    public static boolean isEnableDynamicFiltering(Session session)
+    {
         return session.getSystemProperty(ENABLE_DYNAMIC_FILTERING, Boolean.class);
     }
 
