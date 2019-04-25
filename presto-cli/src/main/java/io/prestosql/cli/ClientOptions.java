@@ -346,7 +346,7 @@ public class ClientOptions
             checkArgument(PRINTABLE_ASCII.matchesAllOf(catalog.orElse("")), "Session property catalog contains spaces or is not US_ASCII: %s", name);
             checkArgument(name.indexOf('=') < 0, "Session property name must not contain '=': %s", name);
             checkArgument(PRINTABLE_ASCII.matchesAllOf(name), "Session property name contains spaces or is not US_ASCII: %s", name);
-            if (!name.equals("genie_job_name")) {
+            if (!(name.equals("genie_job_name") || name.equals("genie_job_grouping"))) {
                 checkArgument(PRINTABLE_ASCII.matchesAllOf(value), "Session property value contains spaces or is not US_ASCII: %s", value);
             }
         }
