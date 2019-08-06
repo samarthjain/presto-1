@@ -19,6 +19,7 @@ import io.airlift.units.Duration;
 import io.prestosql.execution.QueryManagerConfig;
 import io.prestosql.execution.TaskManagerConfig;
 import io.prestosql.memory.MemoryManagerConfig;
+import io.prestosql.memory.NodeMemoryConfig;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.session.PropertyMetadata;
 import io.prestosql.sql.analyzer.FeaturesConfig;
@@ -26,9 +27,13 @@ import io.prestosql.sql.analyzer.FeaturesConfig.JoinDistributionType;
 import io.prestosql.sql.analyzer.FeaturesConfig.JoinReorderingStrategy;
 
 import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.prestosql.spi.StandardErrorCode.INVALID_SESSION_PROPERTY;
@@ -121,12 +126,17 @@ public final class SystemSessionProperties
     private static final String GENIE_VERSION = "genie_version";
     private static final String GENIE_JOB_GROUPING = "genie_job_grouping";
     private static final String QUERY_METADATA = "query_metadata";
+    public static final String METACAT_URI = "metacat_uri";
+    public static final String METACAT_CATALOG_MAPPING = "metacat_catalog_mapping";
+    public static final String ICEBERG_HIVE_MAPPING = "iceberg_hive_mapping";
+    public static final String QUERY_MAX_MEMORY_PER_NODE = "query_max_memory_per_node";
+    public static final String QUERY_MAX_TOTAL_MEMORY_PER_NODE = "query_max_total_memory_per_node";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
     public SystemSessionProperties()
     {
-        this(new QueryManagerConfig(), new TaskManagerConfig(), new MemoryManagerConfig(), new FeaturesConfig());
+        this(new QueryManagerConfig(), new TaskManagerConfig(), new MemoryManagerConfig(), new FeaturesConfig(), new NodeMemoryConfig());
     }
 
     @Inject
@@ -134,7 +144,8 @@ public final class SystemSessionProperties
             QueryManagerConfig queryManagerConfig,
             TaskManagerConfig taskManagerConfig,
             MemoryManagerConfig memoryManagerConfig,
-            FeaturesConfig featuresConfig)
+            FeaturesConfig featuresConfig,
+            NodeMemoryConfig nodeMemoryConfig)
     {
         sessionProperties = ImmutableList.of(
                 stringProperty(
@@ -556,6 +567,31 @@ public final class SystemSessionProperties
                         QUERY_METADATA,
                         "A json string representation of query metadata",
                         "{}",
+                        true),
+                stringProperty(
+                        METACAT_URI,
+                        "URI for metacat that will be used only during the planning phase to determine if a table is iceberg or not",
+                        featuresConfig.getMetacatURI(),
+                        false),
+                stringProperty(
+                        METACAT_CATALOG_MAPPING,
+                        "Mapping from presto catalog name to metacat catalog name i.e. hive=prodhive, testhivehc=testhive, iceberghive=prodhive",
+                        featuresConfig.getMetacatCatalogMapping(),
+                        false),
+                stringProperty(
+                        ICEBERG_HIVE_MAPPING,
+                        "Mapping from iceberg presto catalog name to corresponding presto hive catalog name i.e. icebergprodhive=hive, icebergtesthive=testhive",
+                        featuresConfig.getIcebergCatalogMapping(),
+                        false),
+                dataSizeProperty(
+                        QUERY_MAX_MEMORY_PER_NODE,
+                        "Maximum amount of memory a query can use per node",
+                        nodeMemoryConfig.getMaxQueryMemoryPerNode(),
+                        true),
+                dataSizeProperty(
+                        QUERY_MAX_TOTAL_MEMORY_PER_NODE,
+                        "Maximum amount of total memory a query can use per node",
+                        nodeMemoryConfig.getMaxQueryTotalMemoryPerNode(),
                         true));
     }
 
@@ -957,5 +993,39 @@ public final class SystemSessionProperties
     public static DataSize getQueryMaxDataSize(Session session)
     {
         return session.getSystemProperty(QUERY_MAX_DATA_SIZE, DataSize.class);
+    }
+
+    public static String getMetacatUri(Session session)
+    {
+        return session.getSystemProperty(METACAT_URI, String.class);
+    }
+
+    public static Map<String, String> getMetacatCatalogMapping(Session session)
+    {
+        return getMap(session, METACAT_CATALOG_MAPPING);
+    }
+
+    public static Map<String, String> getIcebergCatalogMapping(Session session)
+    {
+        return getMap(session, ICEBERG_HIVE_MAPPING);
+    }
+
+    private static Map<String, String> getMap(Session session, String propertyName) {
+        final String catalogMapping = session.getSystemProperty(propertyName, String.class);
+        if (catalogMapping != null) {
+            return Arrays.stream(catalogMapping.split(",")).map(s -> s.split("=")).collect(Collectors.toMap(a -> a[0].trim(), a -> a[1].trim()));
+        }
+
+        return Collections.emptyMap();
+    }
+
+    public static DataSize getQueryMaxMemoryPerNode(Session session)
+    {
+        return session.getSystemProperty(QUERY_MAX_MEMORY_PER_NODE, DataSize.class);
+    }
+
+    public static DataSize getQueryMaxTotalMemoryPerNode(Session session)
+    {
+        return session.getSystemProperty(QUERY_MAX_TOTAL_MEMORY_PER_NODE, DataSize.class);
     }
 }
