@@ -21,7 +21,7 @@ import io.prestosql.spi.type.TypeManager;
 
 import javax.inject.Inject;
 
-import static io.prestosql.plugin.hive.metastore.cache.CachingHiveMetastore.memoizeMetastore;
+import static io.prestosql.plugin.hive.metastore.CachingHiveMetastore.memoizeMetastore;
 import static java.util.Objects.requireNonNull;
 
 public class IcebergMetadataFactory

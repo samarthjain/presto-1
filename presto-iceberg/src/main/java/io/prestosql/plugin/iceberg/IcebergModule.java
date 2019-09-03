@@ -15,15 +15,19 @@ package io.prestosql.plugin.iceberg;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import io.airlift.concurrent.BoundedExecutor;
 import io.prestosql.plugin.hive.CachingDirectoryLister;
 import io.prestosql.plugin.hive.CoercionPolicy;
 import io.prestosql.plugin.hive.DirectoryLister;
 import io.prestosql.plugin.hive.DynamicConfigurationProvider;
 import io.prestosql.plugin.hive.FileFormatDataSourceStats;
+import io.prestosql.plugin.hive.ForCachingHiveMetastore;
 import io.prestosql.plugin.hive.HdfsConfiguration;
 import io.prestosql.plugin.hive.HdfsConfigurationInitializer;
 import io.prestosql.plugin.hive.HdfsEnvironment;
+import io.prestosql.plugin.hive.HiveCatalogName;
 import io.prestosql.plugin.hive.HiveCoercionPolicy;
 import io.prestosql.plugin.hive.HiveConfig;
 import io.prestosql.plugin.hive.HiveHdfsConfiguration;
@@ -43,9 +47,15 @@ import io.prestosql.spi.connector.ConnectorPageSinkProvider;
 import io.prestosql.spi.connector.ConnectorPageSourceProvider;
 import io.prestosql.spi.connector.ConnectorSplitManager;
 
+import javax.inject.Singleton;
+
+import java.util.concurrent.Executor;
+
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class IcebergModule
@@ -91,5 +101,15 @@ public class IcebergModule
         newExporter(binder).export(FileFormatDataSourceStats.class).withGeneratedName();
 
         configBinder(binder).bindConfig(OrcFileWriterConfig.class);
+    }
+
+    @ForCachingHiveMetastore
+    @Singleton
+    @Provides
+    public Executor createCachingHiveMetastoreExecutor(HiveCatalogName catalogName, HiveConfig hiveConfig)
+    {
+        return new BoundedExecutor(
+                newCachedThreadPool(daemonThreadsNamed("hive-metastore-" + catalogName + "-%s")),
+                hiveConfig.getMaxMetastoreRefreshThreads());
     }
 }
