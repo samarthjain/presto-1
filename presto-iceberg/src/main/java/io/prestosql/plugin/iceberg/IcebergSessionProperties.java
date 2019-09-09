@@ -36,6 +36,7 @@ public final class IcebergSessionProperties
     private static final String PARQUET_WRITER_BLOCK_SIZE = "parquet_writer_block_size";
     private static final String PARQUET_WRITER_PAGE_SIZE = "parquet_writer_page_size";
     public static final String AWS_IAM_ROLE = "aws_iam_role";
+    private static final String COMMON_VIEW_SUPPORT = "common_view_support";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -67,6 +68,11 @@ public final class IcebergSessionProperties
                         AWS_IAM_ROLE,
                         "AWS IAM Role for S3",
                         "",
+                 false))
+                .add(booleanProperty(
+                        COMMON_VIEW_SUPPORT,
+                        "Allow views to be shared with Spark",
+                        hiveConfig.isCommonViewSupportEnabled(),
                         false))
                 .build();
     }

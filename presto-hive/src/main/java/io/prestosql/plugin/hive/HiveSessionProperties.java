@@ -79,7 +79,7 @@ public final class HiveSessionProperties
     private static final String TEMPORARY_STAGING_DIRECTORY_ENABLED = "temporary_staging_directory_enabled";
     private static final String TEMPORARY_STAGING_DIRECTORY_PATH = "temporary_staging_directory_path";
     public static final String AWS_IAM_ROLE = "aws_iam_role";
-
+    private static final String COMMON_VIEW_SUPPORT = "common_view_support";
     private final List<PropertyMetadata<?>> sessionProperties;
 
     public enum InsertExistingPartitionsBehavior
@@ -314,6 +314,11 @@ public final class HiveSessionProperties
                         AWS_IAM_ROLE,
                         "AWS IAM Role for S3",
                         "",
+                        false),
+                booleanProperty(
+                        COMMON_VIEW_SUPPORT,
+                        "Allow views to be shared with Spark",
+                        hiveConfig.isCommonViewSupportEnabled(),
                         false));
     }
 
@@ -521,5 +526,10 @@ public final class HiveSessionProperties
     public static String getTemporaryStagingDirectoryPath(ConnectorSession session)
     {
         return session.getProperty(TEMPORARY_STAGING_DIRECTORY_PATH, String.class);
+    }
+
+    public static boolean isCommonViewSupportEnabled(ConnectorSession session)
+    {
+        return session.getProperty(COMMON_VIEW_SUPPORT, Boolean.class);
     }
 }

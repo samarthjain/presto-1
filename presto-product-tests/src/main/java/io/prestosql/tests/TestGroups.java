@@ -19,6 +19,7 @@ public final class TestGroups
     public static final String CREATE_DROP_VIEW = "create_drop_view";
     public static final String ALTER_TABLE = "alter_table";
     public static final String COMMENT = "comment";
+    public static final String COMMON_VIEW = "common_view";
     public static final String SIMPLE = "simple";
     public static final String QUARANTINE = "quarantine";
     public static final String FUNCTIONS = "functions";

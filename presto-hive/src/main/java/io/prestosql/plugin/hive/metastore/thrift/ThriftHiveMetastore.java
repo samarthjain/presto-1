@@ -63,6 +63,7 @@ import org.weakref.jmx.Managed;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -82,6 +83,7 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Sets.difference;
 import static io.prestosql.plugin.hive.HiveBasicStatistics.createEmptyStatistics;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_METASTORE_ERROR;
+import static io.prestosql.plugin.hive.HiveUtil.COMMON_VIEW_FLAG;
 import static io.prestosql.plugin.hive.HiveUtil.PRESTO_VIEW_FLAG;
 import static io.prestosql.plugin.hive.metastore.HivePrivilegeInfo.HivePrivilege;
 import static io.prestosql.plugin.hive.metastore.HivePrivilegeInfo.HivePrivilege.OWNERSHIP;
@@ -215,6 +217,10 @@ public class ThriftHiveMetastore
                     .run("getTable", stats.getGetTable().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
                             Table table = client.getTable(databaseName, tableName);
+                            if (table.getTableType().equals(TableType.VIRTUAL_VIEW.name()) &&
+                                    !isPrestoOrCommonView(table)) {
+                                throw new TException(databaseName + "." + tableName + " is not a Presto or Common View");
+                            }
                             return Optional.of(table);
                         }
                     }));
@@ -234,6 +240,17 @@ public class ThriftHiveMetastore
     public Set<ColumnStatisticType> getSupportedColumnStatistics(Type type)
     {
         return ThriftMetastoreUtil.getSupportedColumnStatistics(type);
+    }
+
+    private static boolean isPrestoOrCommonView(Table table)
+    {
+        return "true".equals(table.getParameters().get(PRESTO_VIEW_FLAG)) ||
+                "true".equals(table.getParameters().get(COMMON_VIEW_FLAG));
+    }
+
+    public static boolean isCommonView(Table table)
+    {
+        return "true".equals(table.getParameters().get(COMMON_VIEW_FLAG));
     }
 
     @Override
@@ -704,19 +721,8 @@ public class ThriftHiveMetastore
             return retry()
                     .stopOn(UnknownDBException.class)
                     .stopOnIllegalExceptions()
-                    .run("getAllViews", stats.getGetAllViews().wrap(() -> {
-                        try (ThriftMetastoreClient client = createMetastoreClient()) {
-                            List<String> tableNames = client.getAllTables(databaseName);
-                            ImmutableList.Builder<String> views = ImmutableList.builder();
-                            for (String tableName : tableNames) {
-                                Table table = client.getTable(databaseName, tableName);
-                                if (table.getTableType().equals(TableType.VIRTUAL_VIEW.name())) {
-                                    views.add(table.getTableName());
-                                }
-                            }
-                            return views.build();
-                        }
-                    }));
+                    .run("getAllViews", stats.getGetAllViews().wrap(
+                            () -> getPrestoViews(databaseName)));
         }
         catch (UnknownDBException e) {
             return ImmutableList.of();
@@ -737,30 +743,42 @@ public class ThriftHiveMetastore
          * Hive 2.3 on some databases uses CLOB for table parameter value column and some databases disallow `=` predicate over
          * CLOB values. At the same time, they allow `LIKE` predicates over them.
          */
-        String filterWithEquals = HIVE_FILTER_FIELD_PARAMS + PRESTO_VIEW_FLAG + " = \"true\"";
-        String filterWithLike = HIVE_FILTER_FIELD_PARAMS + PRESTO_VIEW_FLAG + " LIKE \"true\"";
+        String filterPrestoViewWithEquals =
+                HIVE_FILTER_FIELD_PARAMS + PRESTO_VIEW_FLAG + " = \"true\"";
+        String filterPrestoViewWithLike =
+                HIVE_FILTER_FIELD_PARAMS + PRESTO_VIEW_FLAG + " LIKE \"true\"";
+        /*String filterCommonViewWithEquals =
+                HIVE_FILTER_FIELD_PARAMS + COMMON_VIEW_FLAG + " = \"true\"";
+        String filterCommonViewWithLike =
+                HIVE_FILTER_FIELD_PARAMS + COMMON_VIEW_FLAG + " LIKE \"true\"";*/
 
         if (metastoreKnownToSupportTableParamEqualsPredicate) {
             try (ThriftMetastoreClient client = createMetastoreClient()) {
-                return client.getTableNamesByFilter(databaseName, filterWithEquals);
+                Set<String> views = new HashSet<>(client.getTableNamesByFilter(databaseName, filterPrestoViewWithEquals));
+                //views.addAll(client.getTableNamesByFilter(databaseName, filterCommonViewWithEquals));
+                return new ArrayList<>(views);
             }
         }
         if (metastoreKnownToSupportTableParamLikePredicate) {
             try (ThriftMetastoreClient client = createMetastoreClient()) {
-                return client.getTableNamesByFilter(databaseName, filterWithLike);
+                Set<String> views = new HashSet<>(client.getTableNamesByFilter(databaseName, filterPrestoViewWithLike));
+                //views.addAll(client.getTableNamesByFilter(databaseName, filterCommonViewWithLike));
+                return new ArrayList<>(views);
             }
         }
 
         try (ThriftMetastoreClient client = createMetastoreClient()) {
-            List<String> views = client.getTableNamesByFilter(databaseName, filterWithEquals);
+            Set<String> views = new HashSet<>(client.getTableNamesByFilter(databaseName, filterPrestoViewWithEquals));
+            //views.addAll(client.getTableNamesByFilter(databaseName, filterCommonViewWithEquals));
             metastoreKnownToSupportTableParamEqualsPredicate = true;
-            return views;
+            return new ArrayList<>(views);
         }
         catch (TException | RuntimeException firstException) {
             try (ThriftMetastoreClient client = createMetastoreClient()) {
-                List<String> views = client.getTableNamesByFilter(databaseName, filterWithLike);
+                Set<String> views = new HashSet<>(client.getTableNamesByFilter(databaseName, filterPrestoViewWithLike));
+                //views.addAll(client.getTableNamesByFilter(databaseName, filterCommonViewWithLike));
                 metastoreKnownToSupportTableParamLikePredicate = true;
-                return views;
+                return new ArrayList<>(views);
             }
             catch (TException | RuntimeException secondException) {
                 if (firstException != secondException) {

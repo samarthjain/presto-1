@@ -130,7 +130,8 @@ public class TestHiveConfig
                 .setS3RoleMappings((String) null)
                 .setHdfsCacheEnabled(false)
                 .setHdfsCacheDefaultFs((String) null)
-                .setHdfsCacheReplicationFactor(3));
+                .setHdfsCacheReplicationFactor(3)
+                .setCommonViewSupportEnabled(true));
     }
 
     @Test
@@ -228,6 +229,7 @@ public class TestHiveConfig
                 .put("hive.hdfs-cache-default-fs", "hdfs://localhost:8020")
                 .put("hive.hdfs-cache-enabled", "true")
                 .put("hive.hdfs-cache-replication", "10")
+                .put("hive.common-view-support", "false")
                 .build();
 
         HiveConfig expected = new HiveConfig()
@@ -321,7 +323,8 @@ public class TestHiveConfig
                 .setS3RoleMappings("s3rolemappings")
                 .setHdfsCacheDefaultFs("hdfs://localhost:8020")
                 .setHdfsCacheEnabled(true)
-                .setHdfsCacheReplicationFactor(10);
+                .setHdfsCacheReplicationFactor(10)
+                .setCommonViewSupportEnabled(false);
 
         assertFullMapping(properties, expected);
     }

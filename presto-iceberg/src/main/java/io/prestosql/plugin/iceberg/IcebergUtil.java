@@ -50,7 +50,7 @@ import static com.google.common.collect.Streams.stream;
 import static io.prestosql.plugin.hive.HiveColumnHandle.ColumnType.PARTITION_KEY;
 import static io.prestosql.plugin.hive.HiveColumnHandle.ColumnType.REGULAR;
 import static io.prestosql.plugin.hive.HiveType.toHiveType;
-import static io.prestosql.plugin.iceberg.TypeConveter.toPrestoType;
+import static io.prestosql.plugin.hive.common.TypeConverter.toPrestoType;
 import static io.prestosql.spi.type.TimestampType.TIMESTAMP;
 import static io.prestosql.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
 import static org.apache.iceberg.BaseMetastoreTableOperations.ICEBERG_TABLE_TYPE_VALUE;
@@ -86,7 +86,7 @@ final class IcebergUtil
     public MetacatIcebergCatalog getCatalog(Configuration configuration)
     {
         configuration.set(NETFLIX_METACAT_HOST, config.getMetastoreRestEndpoint());
-        configuration.set(NETFLIX_WAREHOUSE_DIR, config.getMetastoreWarehoseDir());
+        configuration.set(NETFLIX_WAREHOUSE_DIR, config.getMetastoreWarehouseDir());
         return new MetacatIcebergCatalog(configuration, APP_NAME);
     }
 

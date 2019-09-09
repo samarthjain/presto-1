@@ -47,7 +47,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.JavaUtils;
-import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat;
@@ -156,6 +155,7 @@ import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Cate
 public final class HiveUtil
 {
     public static final String PRESTO_VIEW_FLAG = "presto_view";
+    public static final String COMMON_VIEW_FLAG = "common_view";
 
     private static final String VIEW_PREFIX = "/* Presto View: ";
     private static final String VIEW_SUFFIX = " */";
@@ -614,9 +614,20 @@ public final class HiveUtil
         throw new VerifyException(format("Unhandled type [%s] for partition: %s", type, partitionName));
     }
 
-    public static boolean isView(Table table)
+    public static boolean isPrestoOrCommonView(Table table)
     {
-        return table.getTableType().equals(TableType.VIRTUAL_VIEW.name());
+        return "true".equals(table.getParameters().get(PRESTO_VIEW_FLAG)) ||
+                "true".equals(table.getParameters().get(COMMON_VIEW_FLAG));
+    }
+
+    public static boolean isCommonView(Table table)
+    {
+        return "true".equals(table.getParameters().get(COMMON_VIEW_FLAG));
+    }
+
+    public static boolean isPrestoView(Table table)
+    {
+        return "true".equals(table.getParameters().get(PRESTO_VIEW_FLAG));
     }
 
     public static String encodeViewData(ConnectorViewDefinition definition)

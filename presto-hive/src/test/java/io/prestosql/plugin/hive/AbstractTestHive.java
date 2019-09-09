@@ -736,7 +736,8 @@ public abstract class AbstractTestHive
                 newFixedThreadPool(2),
                 new HiveTypeTranslator(),
                 TEST_SERVER_VERSION,
-                SqlStandardAccessControlMetadata::new);
+                SqlStandardAccessControlMetadata::new,
+                null);
         transactionManager = new HiveTransactionManager();
         splitManager = new HiveSplitManager(
                 transactionHandle -> ((HiveMetadata) transactionManager.get(transactionHandle)).getMetastore(),

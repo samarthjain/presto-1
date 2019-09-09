@@ -48,6 +48,12 @@ public final class TestingSession
         }
 
         @Override
+        public String getCatalog()
+        {
+            return "";
+        }
+
+        @Override
         public TimeZoneKey getTimeZoneKey()
         {
             return UTC_KEY;

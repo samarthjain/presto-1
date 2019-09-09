@@ -16,6 +16,8 @@ package io.prestosql.plugin.iceberg;
 import io.airlift.json.JsonCodec;
 import io.prestosql.plugin.hive.HdfsEnvironment;
 import io.prestosql.plugin.hive.HiveConfig;
+import io.prestosql.plugin.hive.NodeVersion;
+import io.prestosql.plugin.hive.common.ViewConfig;
 import io.prestosql.plugin.hive.metastore.HiveMetastore;
 import io.prestosql.spi.type.TypeManager;
 
@@ -30,9 +32,11 @@ public class IcebergMetadataFactory
     private final HdfsEnvironment hdfsEnvironment;
     private final TypeManager typeManager;
     private final JsonCodec<CommitTaskData> commitTaskCodec;
+    private final String prestoVersion;
     private final long perTransactionCacheMaximumSize;
     private final IcebergConfig icebergConfig;
     private final IcebergUtil icebergUtil;
+    private final ViewConfig viewConfig;
 
     @Inject
     public IcebergMetadataFactory(
@@ -42,33 +46,42 @@ public class IcebergMetadataFactory
             TypeManager typeManager,
             JsonCodec<CommitTaskData> commitTaskDataJsonCodec,
             IcebergConfig icebergConfig,
-            IcebergUtil icebergUtil)
+            IcebergUtil icebergUtil,
+            NodeVersion nodeVersion,
+            ViewConfig viewConfig)
     {
-        this(metastore,
+        this(config, metastore,
                 hdfsEnvironment,
                 typeManager,
                 commitTaskDataJsonCodec,
                 config.getPerTransactionMetastoreCacheMaximumSize(),
                 icebergConfig,
-                icebergUtil);
+                icebergUtil,
+                nodeVersion.toString(),
+                viewConfig);
     }
 
     public IcebergMetadataFactory(
+            HiveConfig config,
             HiveMetastore metastore,
             HdfsEnvironment hdfsEnvironment,
             TypeManager typeManager,
             JsonCodec<CommitTaskData> commitTaskCodec,
             long perTransactionCacheMaximumSize,
             IcebergConfig icebergConfig,
-            IcebergUtil icebergUtil)
+            IcebergUtil icebergUtil,
+            String prestoVersion,
+            ViewConfig viewConfig)
     {
         this.metastore = requireNonNull(metastore, "metastore is null");
         this.hdfsEnvironment = requireNonNull(hdfsEnvironment, "hdfsEnvironment is null");
         this.typeManager = requireNonNull(typeManager, "typeManager is null");
         this.commitTaskCodec = requireNonNull(commitTaskCodec, "commitTaskCodec is null");
+        this.prestoVersion = requireNonNull(prestoVersion, "prestoVersion is null");
         this.perTransactionCacheMaximumSize = perTransactionCacheMaximumSize;
         this.icebergConfig = icebergConfig;
         this.icebergUtil = icebergUtil;
+        this.viewConfig = viewConfig;
     }
 
     public IcebergMetadata create()
@@ -79,6 +92,8 @@ public class IcebergMetadataFactory
                 typeManager,
                 commitTaskCodec,
                 icebergConfig,
-                icebergUtil);
+                icebergUtil,
+                prestoVersion,
+                viewConfig);
     }
 }

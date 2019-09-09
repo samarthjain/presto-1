@@ -93,6 +93,12 @@ public class FullConnectorSession
     }
 
     @Override
+    public String getCatalog()
+    {
+        return catalog;
+    }
+
+    @Override
     public TimeZoneKey getTimeZoneKey()
     {
         return session.getTimeZoneKey();

@@ -104,6 +104,12 @@ public class TestingConnectorSession
     }
 
     @Override
+    public String getCatalog()
+    {
+        return "";
+    }
+
+    @Override
     public TimeZoneKey getTimeZoneKey()
     {
         return timeZoneKey;

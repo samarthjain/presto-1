@@ -42,6 +42,7 @@ import io.prestosql.plugin.hive.NamenodeStats;
 import io.prestosql.plugin.hive.OrcFileWriterConfig;
 import io.prestosql.plugin.hive.ParquetFileWriterConfig;
 import io.prestosql.plugin.hive.TypeTranslator;
+import io.prestosql.plugin.hive.common.ViewConfig;
 import io.prestosql.plugin.hive.metastore.SemiTransactionalHiveMetastore;
 import io.prestosql.plugin.hive.metastore.thrift.ThriftHiveMetastoreConfig;
 import io.prestosql.plugin.hive.s3.HiveS3Config;
@@ -77,6 +78,7 @@ public class IcebergModule
 
         configBinder(binder).bindConfig(HiveConfig.class);
         configBinder(binder).bindConfig(HiveS3Config.class);
+        configBinder(binder).bindConfig(ViewConfig.class);
 
         configBinder(binder).bindConfig(IcebergConfig.class);
         binder.bind(IcebergUtil.class).in(Scopes.SINGLETON);

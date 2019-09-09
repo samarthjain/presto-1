@@ -16,6 +16,7 @@ package io.prestosql.plugin.hive;
 import io.airlift.concurrent.BoundedExecutor;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
+import io.prestosql.plugin.hive.common.ViewConfig;
 import io.prestosql.plugin.hive.metastore.CachingHiveMetastore;
 import io.prestosql.plugin.hive.metastore.HiveMetastore;
 import io.prestosql.plugin.hive.metastore.SemiTransactionalHiveMetastore;
@@ -53,6 +54,7 @@ public class HiveMetadataFactory
     private final TypeTranslator typeTranslator;
     private final String prestoVersion;
     private final AccessControlMetadataFactory accessControlMetadataFactory;
+    private final ViewConfig viewConfig;
 
     @Inject
     @SuppressWarnings("deprecation")
@@ -67,7 +69,8 @@ public class HiveMetadataFactory
             JsonCodec<PartitionUpdate> partitionUpdateCodec,
             TypeTranslator typeTranslator,
             NodeVersion nodeVersion,
-            AccessControlMetadataFactory accessControlMetadataFactory)
+            AccessControlMetadataFactory accessControlMetadataFactory,
+            ViewConfig viewConfig)
     {
         this(
                 metastore,
@@ -87,7 +90,8 @@ public class HiveMetadataFactory
                 executorService,
                 typeTranslator,
                 nodeVersion.toString(),
-                accessControlMetadataFactory);
+                accessControlMetadataFactory,
+                viewConfig);
     }
 
     public HiveMetadataFactory(
@@ -108,7 +112,8 @@ public class HiveMetadataFactory
             ExecutorService executorService,
             TypeTranslator typeTranslator,
             String prestoVersion,
-            AccessControlMetadataFactory accessControlMetadataFactory)
+            AccessControlMetadataFactory accessControlMetadataFactory,
+            ViewConfig viewConfig)
     {
         this.allowCorruptWritesForTesting = allowCorruptWritesForTesting;
         this.skipDeletionForAlter = skipDeletionForAlter;
@@ -127,6 +132,7 @@ public class HiveMetadataFactory
         this.typeTranslator = requireNonNull(typeTranslator, "typeTranslator is null");
         this.prestoVersion = requireNonNull(prestoVersion, "prestoVersion is null");
         this.accessControlMetadataFactory = requireNonNull(accessControlMetadataFactory, "accessControlMetadataFactory is null");
+        this.viewConfig = viewConfig;
 
         if (!allowCorruptWritesForTesting && !timeZone.equals(DateTimeZone.getDefault())) {
             log.warn("Hive writes are disabled. " +
@@ -162,6 +168,7 @@ public class HiveMetadataFactory
                 typeTranslator,
                 prestoVersion,
                 new MetastoreHiveStatisticsProvider(metastore),
-                accessControlMetadataFactory.create(metastore));
+                accessControlMetadataFactory.create(metastore),
+                viewConfig);
     }
 }

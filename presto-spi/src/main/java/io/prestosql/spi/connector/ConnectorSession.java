@@ -32,6 +32,8 @@ public interface ConnectorSession
 
     ConnectorIdentity getIdentity();
 
+    String getCatalog();
+
     TimeZoneKey getTimeZoneKey();
 
     Locale getLocale();

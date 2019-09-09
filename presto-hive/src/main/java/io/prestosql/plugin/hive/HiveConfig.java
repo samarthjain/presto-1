@@ -173,6 +173,8 @@ public class HiveConfig
 
     private int hdfsCacheReplication = 3;
 
+    private boolean isCommonViewSupportEnabled = true;
+
     public int getMaxInitialSplits()
     {
         return maxInitialSplits;
@@ -1381,4 +1383,17 @@ public class HiveConfig
 
     public int getHdfsCacheReplicationFactor()
     { return hdfsCacheReplication; }
+
+    @Config("hive.common-view-support")
+    @ConfigDescription("Views are shared with Spark")
+    public HiveConfig setCommonViewSupportEnabled(boolean commonViewSupportEnabled)
+    {
+        this.isCommonViewSupportEnabled = commonViewSupportEnabled;
+        return this;
+    }
+
+    public boolean isCommonViewSupportEnabled()
+    {
+        return isCommonViewSupportEnabled;
+    }
 }

@@ -77,6 +77,11 @@ public class NetflixAccessControl
     }
 
     @Override
+    public void checkCanSetTableComment(ConnectorTransactionHandle transactionHandle, ConnectorIdentity identity, SchemaTableName tableName)
+    {
+    }
+
+    @Override
     public Set<String> filterSchemas(ConnectorTransactionHandle transactionHandle, ConnectorIdentity identity, Set<String> schemaNames)
     {
         return schemaNames;

@@ -18,6 +18,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.netflix.iceberg</groupId>
+            <artifactId>bdp-iceberg</artifactId>
+            <version>0.7.0-nflx-10</version>
+        </dependency>
+        <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-plugin-toolkit</artifactId>
         </dependency>
@@ -114,11 +119,11 @@
             <artifactId>guice</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <optional>true</optional>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.google.code.findbugs</groupId>-->
+<!--            <artifactId>jsr305</artifactId>-->
+<!--            <optional>true</optional>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>it.unimi.dsi</groupId>

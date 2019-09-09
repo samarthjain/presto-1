@@ -11,11 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.prestosql.plugin.iceberg;
+package io.prestosql.plugin.hive.common;
 
 import io.airlift.configuration.Config;
 
-public class IcebergConfig
+public class ViewConfig
 {
     private String metastoreRestEndpoint;
     private String metacatCatalogName;
@@ -26,7 +26,7 @@ public class IcebergConfig
         return metastoreRestEndpoint;
     }
 
-    @Config("iceberg.metacat-rest-endpoint")
+    @Config("view.metacat-rest-endpoint")
     public void setMetastoreRestEndpoint(String metastoreRestEndpoint)
     {
         this.metastoreRestEndpoint = metastoreRestEndpoint;
@@ -37,13 +37,13 @@ public class IcebergConfig
         return metacatCatalogName;
     }
 
-    @Config("iceberg.metacat-catalog-name")
+    @Config("view.metacat-catalog-name")
     public void setMetacatCatalogName(String metacatCatalogName)
     {
         this.metacatCatalogName = metacatCatalogName;
     }
 
-    @Config("iceberg.metastore-warehouse-dir")
+    @Config("view.metastore-warehouse-dir")
     public void setMetastoreWarehouseDir(String metastoreWarehouseDir)
     {
         this.metastoreWarehouseDir = metastoreWarehouseDir;

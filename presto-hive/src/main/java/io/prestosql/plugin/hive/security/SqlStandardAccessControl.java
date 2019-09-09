@@ -489,7 +489,7 @@ public class SqlStandardAccessControl
     private String getTableType(ConnectorTransactionHandle transaction, SchemaTableName tableName)
     {
         SemiTransactionalHiveMetastore metastore = metastoreProvider.apply(((HiveTransactionHandle) transaction));
-        if (HiveUtil.isView(metastore.getTable(tableName.getSchemaName(), tableName.getTableName()).get())) {
+        if (HiveUtil.isPrestoOrCommonView(metastore.getTable(tableName.getSchemaName(), tableName.getTableName()).get())) {
             return "view";
         }
         return "table";
