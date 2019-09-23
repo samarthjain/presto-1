@@ -100,7 +100,8 @@ public class MapSubscriptOperator
         SingleMapBlock mapBlock = (SingleMapBlock) map;
         int valuePosition = mapBlock.seekKeyExact(key);
         if (valuePosition == -1) {
-            throw throwMissingKeyException(keyType, functionInvoker, key, session);
+            return null;
+            // throw throwMissingKeyException(keyType, functionInvoker, key, session);
         }
         return readNativeValue(valueType, mapBlock, valuePosition);
     }
@@ -111,7 +112,8 @@ public class MapSubscriptOperator
         SingleMapBlock mapBlock = (SingleMapBlock) map;
         int valuePosition = mapBlock.seekKeyExact(key);
         if (valuePosition == -1) {
-            throw throwMissingKeyException(keyType, functionInvoker, key, session);
+            return null;
+            // throw throwMissingKeyException(keyType, functionInvoker, key, session);
         }
         return readNativeValue(valueType, mapBlock, valuePosition);
     }
@@ -122,7 +124,8 @@ public class MapSubscriptOperator
         SingleMapBlock mapBlock = (SingleMapBlock) map;
         int valuePosition = mapBlock.seekKeyExact(key);
         if (valuePosition == -1) {
-            throw throwMissingKeyException(keyType, functionInvoker, key, session);
+            return null;
+            //throw throwMissingKeyException(keyType, functionInvoker, key, session);
         }
         return readNativeValue(valueType, mapBlock, valuePosition);
     }
@@ -133,7 +136,8 @@ public class MapSubscriptOperator
         SingleMapBlock mapBlock = (SingleMapBlock) map;
         int valuePosition = mapBlock.seekKeyExact(key);
         if (valuePosition == -1) {
-            throw throwMissingKeyException(keyType, functionInvoker, key, session);
+            return null;
+            //throw throwMissingKeyException(keyType, functionInvoker, key, session);
         }
         return readNativeValue(valueType, mapBlock, valuePosition);
     }
@@ -144,7 +148,8 @@ public class MapSubscriptOperator
         SingleMapBlock mapBlock = (SingleMapBlock) map;
         int valuePosition = mapBlock.seekKeyExact((Block) key);
         if (valuePosition == -1) {
-            throw throwMissingKeyException(keyType, functionInvoker, key, session);
+            return null;
+            //throw throwMissingKeyException(keyType, functionInvoker, key, session);
         }
         return readNativeValue(valueType, mapBlock, valuePosition);
     }
