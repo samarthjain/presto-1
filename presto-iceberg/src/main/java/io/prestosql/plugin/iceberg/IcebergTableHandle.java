@@ -15,6 +15,7 @@ package io.prestosql.plugin.iceberg;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 import io.prestosql.plugin.hive.HiveColumnHandle;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.ConnectorTableHandle;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.prestosql.plugin.iceberg.TableType.DATA;
 import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
@@ -104,41 +106,42 @@ public class IcebergTableHandle
     public static IcebergTableHandle from(SchemaTableName name)
     {
         Matcher match = TABLE_PATTERN.matcher(name.getTableName());
-        if (!match.matches()) {
-            throw new PrestoException(NOT_SUPPORTED, "Invalid Iceberg table name: " + name);
+        if (match.matches()) {
+                String table = match.group("table");
+                String typeStr = match.group("type");
+                String ver1 = match.group("ver1");
+                String ver2 = match.group("ver2");
+
+                TableType type = DATA;
+                if (typeStr != null) {
+                    try {
+                        type = TableType.valueOf(typeStr.toUpperCase(Locale.ROOT));
+                    } catch (IllegalArgumentException e) {
+                        throw new PrestoException(NOT_SUPPORTED, format("Invalid Iceberg table name (unknown type '%s'): %s", typeStr, name));
+                    }
+                }
+
+                Optional<Long> version = Optional.empty();
+                if (type == DATA ||
+                        type == TableType.PARTITIONS ||
+                        type == TableType.MANIFESTS) {
+                    Preconditions.checkArgument(ver1 == null || ver2 == null,
+                            "Cannot specify two versions");
+                    if (ver1 != null) {
+                        version = Optional.ofNullable(parseLong(ver1));
+                    }
+                    else if (ver2 != null) {
+                        version = Optional.ofNullable(parseLong(ver2));
+                    }
+                }
+                else {
+                    Preconditions.checkArgument(ver1 == null && ver2 == null,
+                            "Cannot use version with table type %s: %s", typeStr, name.getTableName());
+                }
+
+                return new IcebergTableHandle(name.getSchemaName(), table, type, version, TupleDomain.all());
         }
 
-        String table = match.group("table");
-        String typeString = match.group("type");
-        String ver1 = match.group("ver1");
-        String ver2 = match.group("ver2");
-
-        TableType type = TableType.DATA;
-        if (typeString != null) {
-            try {
-                type = TableType.valueOf(typeString.toUpperCase(Locale.ROOT));
-            }
-            catch (IllegalArgumentException e) {
-                throw new PrestoException(NOT_SUPPORTED, format("Invalid Iceberg table name (unknown type '%s'): %s", typeString, name));
-            }
-        }
-
-        Optional<Long> version = Optional.empty();
-        if (type == TableType.DATA || type == TableType.PARTITIONS || type == TableType.MANIFESTS) {
-            if (ver1 != null && ver2 != null) {
-                throw new PrestoException(NOT_SUPPORTED, "Invalid Iceberg table name (cannot specify two @ versions): " + name);
-            }
-            if (ver1 != null) {
-                version = Optional.of(parseLong(ver1));
-            }
-            else if (ver2 != null) {
-                version = Optional.of(parseLong(ver2));
-            }
-        }
-        else if (ver1 != null || ver2 != null) {
-            throw new PrestoException(NOT_SUPPORTED, format("Invalid Iceberg table name (cannot use @ version with table type '%s'): %s", type, name));
-        }
-
-        return new IcebergTableHandle(name.getSchemaName(), table, type, version, TupleDomain.all());
+        return new IcebergTableHandle(name.getSchemaName(), name.getTableName(), DATA, Optional.empty(), TupleDomain.all());
     }
 }
