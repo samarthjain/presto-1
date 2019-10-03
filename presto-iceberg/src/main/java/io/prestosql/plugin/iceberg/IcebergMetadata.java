@@ -38,11 +38,14 @@ import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.connector.ConnectorTableHandle;
 import io.prestosql.spi.connector.ConnectorTableMetadata;
 import io.prestosql.spi.connector.ConnectorTableProperties;
+import io.prestosql.spi.connector.Constraint;
+import io.prestosql.spi.connector.ConstraintApplicationResult;
 import io.prestosql.spi.connector.SchemaNotFoundException;
 import io.prestosql.spi.connector.SchemaTableName;
 import io.prestosql.spi.connector.SchemaTablePrefix;
 import io.prestosql.spi.connector.SystemTable;
 import io.prestosql.spi.connector.TableNotFoundException;
+import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.statistics.ComputedStatistics;
 import io.prestosql.spi.type.DecimalType;
 import io.prestosql.spi.type.TimestampType;
@@ -75,6 +78,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.prestosql.plugin.hive.HiveColumnHandle.updateRowIdHandle;
 import static io.prestosql.plugin.hive.HiveSchemaProperties.getLocation;
 import static io.prestosql.plugin.hive.HiveWriteUtils.getTableDefaultLocation;
+import static io.prestosql.plugin.iceberg.DomainConverter.convertTupleDomainTypes;
 import static io.prestosql.plugin.iceberg.ExpressionConverter.toIcebergExpression;
 import static io.prestosql.plugin.iceberg.IcebergTableProperties.FILE_FORMAT_PROPERTY;
 import static io.prestosql.plugin.iceberg.IcebergTableProperties.PARTITIONING_PROPERTY;
@@ -159,6 +163,19 @@ public class IcebergMetadata
     public ConnectorTableProperties getTableProperties(ConnectorSession session, ConnectorTableHandle tableHandle)
     {
         return new ConnectorTableProperties();
+    }
+
+    @Override
+    public Optional<ConstraintApplicationResult<ConnectorTableHandle>> applyFilter(ConnectorSession session, ConnectorTableHandle handle, Constraint constraint)
+    {
+        TupleDomain<HiveColumnHandle> predicate = convertTupleDomainTypes(constraint.getSummary().transform(HiveColumnHandle.class::cast));
+        IcebergTableHandle tableHandle = (IcebergTableHandle) handle;
+        IcebergTableHandle handleWithPredicate = new IcebergTableHandle(tableHandle.getSchemaName(),
+                tableHandle.getTableName(),
+                tableHandle.getTableType(),
+                tableHandle.getSnapshotId(),
+                predicate);
+        return Optional.of(new ConstraintApplicationResult<>(handleWithPredicate, constraint.getSummary()));
     }
 
     @Override

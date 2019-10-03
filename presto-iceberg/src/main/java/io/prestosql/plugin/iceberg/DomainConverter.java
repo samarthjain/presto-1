@@ -89,6 +89,8 @@ public final class DomainConverter
                     transformedValueSet = SortedRangeSet.copyOf(valueSet.getType(), ranges);
                 }
                 transformedMap.put(column, Domain.create(transformedValueSet, domain.isNullAllowed()));
+            } else {
+                transformedMap.put(column, domain);
             }
         });
         return TupleDomain.withColumnDomains(transformedMap);
