@@ -283,10 +283,12 @@ public class PartitionTable
     private Map<Integer, Object> toMap(Map<Integer, ByteBuffer> idToMetricMap)
     {
         ImmutableMap.Builder<Integer, Object> map = ImmutableMap.builder();
-        idToMetricMap.forEach((id, value) -> {
-            Type.PrimitiveType type = idToTypeMapping.get(id);
-            map.put(id, Conversions.fromByteBuffer(type, value));
-        });
+        if (idToMetricMap != null) {
+            idToMetricMap.forEach((id, value) -> {
+                Type.PrimitiveType type = idToTypeMapping.get(id);
+                map.put(id, Conversions.fromByteBuffer(type, value));
+            });
+        }
         return map.build();
     }
 
@@ -344,9 +346,9 @@ public class PartitionTable
             // we are assuming if minValues is not present, max will be not be present either.
             this.corruptedStats = nonPartitionPrimitiveColumns.stream()
                     .map(Types.NestedField::fieldId)
-                    .filter(id -> !minValues.containsKey(id) && (!nullCounts.containsKey(id) || nullCounts.get(id) != recordCount))
+                    .filter(id -> !minValues.containsKey(id) && (nullCounts == null || !nullCounts.containsKey(id) || nullCounts.get(id) != recordCount))
                     .collect(toCollection(HashSet::new));
-            this.nullCounts = new HashMap<>(nullCounts);
+            this.nullCounts = nullCounts != null ? new HashMap<>(nullCounts): new HashMap<>();
         }
 
         public StructLike getValues()
@@ -428,7 +430,7 @@ public class PartitionTable
                 Object newValue = newStat.get(id);
                 // it is expected to not have min/max if all values are null for a column in the datafile and it is not a case of corrupted stats.
                 if (newValue == null) {
-                    Long nullCount = nullCounts.get(id);
+                    Long nullCount = nullCounts != null ? nullCounts.get(id) : null;
                     if ((nullCount == null) || (nullCount != recordCount)) {
                         current.remove(id);
                         corruptedStats.add(id);
@@ -448,8 +450,10 @@ public class PartitionTable
 
         public void updateNullCount(Map<Integer, Long> nullCounts)
         {
-            nullCounts.forEach((key, counts) ->
-                    this.nullCounts.merge(key, counts, Long::sum));
+            if (nullCounts != null) {
+                nullCounts.forEach((key, counts) ->
+                        this.nullCounts.merge(key, counts, Long::sum));
+            }
         }
     }
 }
