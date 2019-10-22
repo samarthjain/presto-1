@@ -96,7 +96,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -1610,27 +1609,29 @@ public class HiveMetadata
         return metastore.getTable(viewName.getSchemaName(), viewName.getTableName())
                 .filter(HiveUtil::isView)
                 .map(view -> {
-                    if("true".equals(view.getParameters().get(PRESTO_VIEW_FLAG))) {
-                    ConnectorViewDefinition definition = decodeViewData(view.getViewOriginalText()
-                            .orElseThrow(() -> new PrestoException(HIVE_INVALID_METADATA, "No view original text: " + viewName)));
-                    // use owner from table metadata if it exists
-                    if (view.getOwner() != null && !definition.isRunAsInvoker()) {
-                        definition = new ConnectorViewDefinition(
-                                definition.getOriginalSql(),
-                                definition.getCatalog(),
-                                definition.getSchema(),
-                                definition.getColumns(),
-                                Optional.of(view.getOwner()),
-                                false);
+                    if ("true".equals(view.getParameters().get(PRESTO_VIEW_FLAG))) {
+                        ConnectorViewDefinition definition = decodeViewData(view.getViewOriginalText()
+                                .orElseThrow(() -> new PrestoException(HIVE_INVALID_METADATA, "No view original text: " + viewName)));
+                        // use owner from table metadata if it exists
+                        if (view.getOwner() != null && !definition.isRunAsInvoker()) {
+                            definition = new ConnectorViewDefinition(
+                                    definition.getOriginalSql(),
+                                    definition.getCatalog(),
+                                    definition.getSchema(),
+                                    definition.getColumns(),
+                                    Optional.of(view.getOwner()),
+                                    false);
+                        }
+                        return definition;
                     }
-                    return definition;
-                } else {
-                    return new ConnectorViewDefinition(
+                    else {
+                        return new ConnectorViewDefinition(
                                 view.getViewOriginalText().orElseThrow(() -> new IllegalStateException("original sql must not be missing")),
                                 view.getViewExpandedText(),
                                 Optional.of(viewName.getSchemaName()),
                                 Optional.of(view.getOwner().replaceAll("@.*", "")));
-                    }});
+                    }
+                });
     }
 
     @Override
@@ -1653,13 +1654,13 @@ public class HiveMetadata
                             viewDefinition.getColumns(), //need view columns
                             viewDefinition.getOwner(),
                             viewDefinition.isRunAsInvoker()));
-                } else if (isView(tbl)){
+                }
+                else if (isView(tbl)) {
                     views.put(schemaTableName, new ConnectorViewDefinition(
                             tbl.getViewOriginalText().orElseThrow(() -> new IllegalStateException("original sql must not be missing")),
                             tbl.getViewExpandedText(),
                             Optional.of(tbl.getSchemaTableName().getSchemaName()),
-                            Optional.of(tbl.getOwner().replaceAll("@.*", ""))
-                            ));
+                            Optional.of(tbl.getOwner().replaceAll("@.*", ""))));
                 }
             }
         }

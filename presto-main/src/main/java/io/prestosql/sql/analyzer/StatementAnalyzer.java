@@ -1964,6 +1964,7 @@ class StatementAnalyzer
                 AccessControl viewAccessControl;
                 if (owner.isPresent() && !owner.get().equals(session.getIdentity().getUser())) {
                     identity = new Identity(owner.get(), Optional.empty());
+                    identity.setSessionPropertiesByCatalog(session.getIdentity().getSessionPropertiesByCatalog());
                     viewAccessControl = new ViewAccessControl(accessControl);
                 }
                 else {

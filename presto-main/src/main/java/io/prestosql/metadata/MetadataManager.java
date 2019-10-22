@@ -545,7 +545,7 @@ public final class MetadataManager
                 for (Entry<QualifiedObjectName, ConnectorViewDefinition> entry : getViews(session, prefix).entrySet()) {
                     ImmutableList.Builder<ColumnMetadata> columns = ImmutableList.builder();
                     ConnectorViewDefinition viewDefinition = entry.getValue();
-                    if(!viewDefinition.isPrestoView()) {
+                    if (!viewDefinition.isPrestoView()) {
                         viewDefinition = deserializeHiveView(session, viewDefinition);
                     }
 
@@ -930,7 +930,7 @@ public final class MetadataManager
                             entry.getKey().getSchemaName(),
                             entry.getKey().getTableName());
                     ConnectorViewDefinition viewDefinition = entry.getValue();
-                    views.put(viewName, viewDefinition.isPrestoView()? viewDefinition : deserializeHiveView(session, viewDefinition));
+                    views.put(viewName, viewDefinition.isPrestoView() ? viewDefinition : deserializeHiveView(session, viewDefinition));
                 }
             }
         }
@@ -944,7 +944,7 @@ public final class MetadataManager
                 .flatMap(catalog -> catalog.getMetadata().getView(
                         session.toConnectorSession(catalog.getCatalogName()),
                         viewName.asSchemaTableName()))
-                .map(view -> view.isPrestoView()? view: deserializeHiveView(session, view));
+                .map(view -> view.isPrestoView() ? view : deserializeHiveView(session, view));
     }
 
     @Override
@@ -1407,7 +1407,13 @@ public final class MetadataManager
         try {
             SqlParser sqlParser = new SqlParser();
             Analyzer analyzer = new Analyzer(session, this, sqlParser, new AllowAllAccessControl(), Optional.<QueryExplainer>empty(), new ArrayList(), WarningCollector.NOOP);
-            io.prestosql.sql.tree.Statement statement = sqlParser.createStatement(sql, new ParsingOptions(ParsingOptions.DecimalLiteralTreatment.AS_DECIMAL));
+            io.prestosql.sql.tree.Statement statement = null;
+            try {
+                statement = sqlParser.createStatement(sql, new ParsingOptions(ParsingOptions.DecimalLiteralTreatment.AS_DECIMAL));
+            }
+            catch (Exception e) {
+                statement = sqlParser.createStatement(originalSql, new ParsingOptions(ParsingOptions.DecimalLiteralTreatment.AS_DECIMAL));
+            }
             io.prestosql.sql.analyzer.Analysis analysis = analyzer.analyze(statement);
             List<ConnectorViewDefinition.ViewColumn> columns = analysis.getOutputDescriptor()
                     .getVisibleFields().stream()
