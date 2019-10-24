@@ -203,9 +203,7 @@ public class IcebergPageSourceProvider
 
             List<ColumnMapping> columnMappings = buildColumnMappings(
                     partitionKeys,
-                    columns.stream()
-                            .filter(column -> !column.isHidden())
-                            .collect(toImmutableList()),
+                    columns.stream().collect(toImmutableList()),
                     ImmutableList.of(),
                     ImmutableMap.of(),
                     path,

@@ -31,6 +31,8 @@ public class IcebergMetadataFactory
     private final TypeManager typeManager;
     private final JsonCodec<CommitTaskData> commitTaskCodec;
     private final long perTransactionCacheMaximumSize;
+    private final IcebergConfig icebergConfig;
+    private final IcebergUtil icebergUtil;
 
     @Inject
     public IcebergMetadataFactory(
@@ -38,13 +40,17 @@ public class IcebergMetadataFactory
             HiveMetastore metastore,
             HdfsEnvironment hdfsEnvironment,
             TypeManager typeManager,
-            JsonCodec<CommitTaskData> commitTaskDataJsonCodec)
+            JsonCodec<CommitTaskData> commitTaskDataJsonCodec,
+            IcebergConfig icebergConfig,
+            IcebergUtil icebergUtil)
     {
         this(metastore,
                 hdfsEnvironment,
                 typeManager,
                 commitTaskDataJsonCodec,
-                config.getPerTransactionMetastoreCacheMaximumSize());
+                config.getPerTransactionMetastoreCacheMaximumSize(),
+                icebergConfig,
+                icebergUtil);
     }
 
     public IcebergMetadataFactory(
@@ -52,13 +58,17 @@ public class IcebergMetadataFactory
             HdfsEnvironment hdfsEnvironment,
             TypeManager typeManager,
             JsonCodec<CommitTaskData> commitTaskCodec,
-            long perTransactionCacheMaximumSize)
+            long perTransactionCacheMaximumSize,
+            IcebergConfig icebergConfig,
+            IcebergUtil icebergUtil)
     {
         this.metastore = requireNonNull(metastore, "metastore is null");
         this.hdfsEnvironment = requireNonNull(hdfsEnvironment, "hdfsEnvironment is null");
         this.typeManager = requireNonNull(typeManager, "typeManager is null");
         this.commitTaskCodec = requireNonNull(commitTaskCodec, "commitTaskCodec is null");
         this.perTransactionCacheMaximumSize = perTransactionCacheMaximumSize;
+        this.icebergConfig = icebergConfig;
+        this.icebergUtil = icebergUtil;
     }
 
     public IcebergMetadata create()
@@ -67,6 +77,8 @@ public class IcebergMetadataFactory
                 memoizeMetastore(metastore, perTransactionCacheMaximumSize),
                 hdfsEnvironment,
                 typeManager,
-                commitTaskCodec);
+                commitTaskCodec,
+                icebergConfig,
+                icebergUtil);
     }
 }

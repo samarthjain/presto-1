@@ -32,7 +32,9 @@ import io.prestosql.plugin.hive.HiveCoercionPolicy;
 import io.prestosql.plugin.hive.HiveConfig;
 import io.prestosql.plugin.hive.HiveHdfsConfiguration;
 import io.prestosql.plugin.hive.HiveLocationService;
+import io.prestosql.plugin.hive.HiveMetadata;
 import io.prestosql.plugin.hive.HiveNodePartitioningProvider;
+import io.prestosql.plugin.hive.HiveTransactionHandle;
 import io.prestosql.plugin.hive.HiveTransactionManager;
 import io.prestosql.plugin.hive.HiveTypeTranslator;
 import io.prestosql.plugin.hive.LocationService;
@@ -40,6 +42,7 @@ import io.prestosql.plugin.hive.NamenodeStats;
 import io.prestosql.plugin.hive.OrcFileWriterConfig;
 import io.prestosql.plugin.hive.ParquetFileWriterConfig;
 import io.prestosql.plugin.hive.TypeTranslator;
+import io.prestosql.plugin.hive.metastore.SemiTransactionalHiveMetastore;
 import io.prestosql.plugin.hive.metastore.thrift.ThriftHiveMetastoreConfig;
 import io.prestosql.plugin.hive.s3.HiveS3Config;
 import io.prestosql.spi.connector.ConnectorNodePartitioningProvider;
@@ -50,6 +53,7 @@ import io.prestosql.spi.connector.ConnectorSplitManager;
 import javax.inject.Singleton;
 
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
@@ -73,6 +77,9 @@ public class IcebergModule
 
         configBinder(binder).bindConfig(HiveConfig.class);
         configBinder(binder).bindConfig(HiveS3Config.class);
+
+        configBinder(binder).bindConfig(IcebergConfig.class);
+        binder.bind(IcebergUtil.class).in(Scopes.SINGLETON);
 
         binder.bind(IcebergSessionProperties.class).in(Scopes.SINGLETON);
         binder.bind(IcebergTableProperties.class).in(Scopes.SINGLETON);
@@ -111,5 +118,17 @@ public class IcebergModule
         return new BoundedExecutor(
                 newCachedThreadPool(daemonThreadsNamed("hive-metastore-" + catalogName + "-%s")),
                 hiveConfig.getMaxMetastoreRefreshThreads());
+    }
+
+    /**
+     * TODO, this is needed as LegacyAccessControl needs it. may be we should just get rid of LegacyAccessControl.
+     * @param transactionManager
+     * @return
+     */
+    @Singleton
+    @Provides
+    public Function<HiveTransactionHandle, SemiTransactionalHiveMetastore> createMetastoreGetter(HiveTransactionManager transactionManager)
+    {
+        return transactionHandle -> ((HiveMetadata) transactionManager.get(transactionHandle)).getMetastore();
     }
 }

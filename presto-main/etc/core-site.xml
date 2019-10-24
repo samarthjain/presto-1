@@ -69,4 +69,8 @@
         <name>aws.iam.role.arn.s3.nflx.prod.awsbillingdata</name>
         <value>arn:aws:iam::149510111645:role/awsbilling</value>
     </property>
+    <property>
+        <name>hive.metastore.warehouse.dir</name>
+        <name></name>
+    </property>
 </configuration>

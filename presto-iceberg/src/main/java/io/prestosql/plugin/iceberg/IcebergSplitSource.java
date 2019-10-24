@@ -48,7 +48,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Iterators.limit;
 import static io.prestosql.plugin.hive.HivePartitionKey.HIVE_DEFAULT_DYNAMIC_PARTITION;
 import static io.prestosql.plugin.iceberg.DomainConverter.convertTupleDomainTypes;
-import static io.prestosql.plugin.iceberg.IcebergUtil.getIdentityPartitions;
+import static io.prestosql.plugin.iceberg.IcebergUtil.getPartitions;
 import static java.lang.Math.toIntExact;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
@@ -137,7 +137,7 @@ public class IcebergSplitSource
     {
         StructLike partition = scanTask.file().partition();
         PartitionSpec spec = scanTask.spec();
-        Map<PartitionField, Integer> fieldToIndex = getIdentityPartitions(spec);
+        Map<PartitionField, Integer> fieldToIndex = getPartitions(spec, true);
         List<HivePartitionKey> partitionKeys = new ArrayList<>();
 
         fieldToIndex.forEach((field, index) -> {

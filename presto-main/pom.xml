@@ -302,6 +302,17 @@
         </dependency>
 
         <dependency>
+            <groupId>netflix</groupId>
+            <artifactId>metacat-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>netflix</groupId>
+            <artifactId>metacat-common</artifactId>
+        </dependency>
+
+        <!-- used by tests but also needed transitively -->
+        <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-plugin-toolkit</artifactId>
         </dependency>

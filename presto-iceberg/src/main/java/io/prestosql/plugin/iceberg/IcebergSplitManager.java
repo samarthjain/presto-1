@@ -29,7 +29,6 @@ import org.apache.iceberg.TableScan;
 
 import javax.inject.Inject;
 
-import static io.prestosql.plugin.iceberg.IcebergUtil.getIcebergTable;
 import static io.prestosql.plugin.iceberg.IcebergUtil.getTableScan;
 import static java.util.Objects.requireNonNull;
 
@@ -38,12 +37,14 @@ public class IcebergSplitManager
 {
     private final IcebergTransactionManager transactionManager;
     private final HdfsEnvironment hdfsEnvironment;
+    private IcebergUtil icebergUtil;
 
     @Inject
-    public IcebergSplitManager(IcebergTransactionManager transactionManager, HdfsEnvironment hdfsEnvironment)
+    public IcebergSplitManager(IcebergTransactionManager transactionManager, HdfsEnvironment hdfsEnvironment, IcebergUtil icebergUtil)
     {
         this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
         this.hdfsEnvironment = requireNonNull(hdfsEnvironment, "hdfsEnvironment is null");
+        this.icebergUtil = icebergUtil;
     }
 
     @Override
@@ -53,7 +54,7 @@ public class IcebergSplitManager
 
         HiveMetastore metastore = transactionManager.get(transaction).getMetastore();
         Configuration configuration = hdfsEnvironment.getConfiguration(new HdfsContext(session, table.getSchemaName()), new Path("file:///tmp"));
-        Table icebergTable = getIcebergTable(table.getSchemaName(), table.getTableName(), configuration, metastore);
+        Table icebergTable = icebergUtil.getIcebergTable(table.getSchemaName(), table.getTableName(), configuration, metastore);
 
         TableScan tableScan = getTableScan(session, table.getPredicate(), table.getSnapshotId(), icebergTable);
 

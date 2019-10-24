@@ -82,7 +82,7 @@ public final class PartitionTransforms
                     return new ColumnTransform(INTEGER, PartitionTransforms::yearsFromTimestamp);
                 }
                 if (type.equals(TIMESTAMP_WITH_TIME_ZONE)) {
-                    return new ColumnTransform(INTEGER, PartitionTransforms::yearsFromTimestampWithTimeZone);
+                    return new ColumnTransform(INTEGER, PartitionTransforms::yearsFromTimestamp);
                 }
                 throw new UnsupportedOperationException("Unsupported type for 'year': " + field);
             case "month":
@@ -93,7 +93,7 @@ public final class PartitionTransforms
                     return new ColumnTransform(INTEGER, PartitionTransforms::monthsFromTimestamp);
                 }
                 if (type.equals(TIMESTAMP_WITH_TIME_ZONE)) {
-                    return new ColumnTransform(INTEGER, PartitionTransforms::monthsFromTimestampWithTimeZone);
+                    return new ColumnTransform(INTEGER, PartitionTransforms::monthsFromTimestamp);
                 }
                 throw new UnsupportedOperationException("Unsupported type for 'month': " + field);
             case "day":
@@ -104,7 +104,7 @@ public final class PartitionTransforms
                     return new ColumnTransform(INTEGER, PartitionTransforms::daysFromTimestamp);
                 }
                 if (type.equals(TIMESTAMP_WITH_TIME_ZONE)) {
-                    return new ColumnTransform(INTEGER, PartitionTransforms::daysFromTimestampWithTimeZone);
+                    return new ColumnTransform(INTEGER, PartitionTransforms::daysFromTimestamp);
                 }
                 throw new UnsupportedOperationException("Unsupported type for 'day': " + field);
             case "hour":
@@ -112,7 +112,7 @@ public final class PartitionTransforms
                     return new ColumnTransform(INTEGER, PartitionTransforms::hoursFromTimestamp);
                 }
                 if (type.equals(TIMESTAMP_WITH_TIME_ZONE)) {
-                    return new ColumnTransform(INTEGER, PartitionTransforms::hoursFromTimestampWithTimeZone);
+                    return new ColumnTransform(INTEGER, PartitionTransforms::hoursFromTimestamp);
                 }
                 throw new UnsupportedOperationException("Unsupported type for 'hour': " + field);
         }
@@ -144,7 +144,7 @@ public final class PartitionTransforms
                 return new ColumnTransform(INTEGER, block -> bucketTimestamp(block, count));
             }
             if (type.equals(TIMESTAMP_WITH_TIME_ZONE)) {
-                return new ColumnTransform(INTEGER, block -> bucketTimestampWithTimeZone(block, count));
+                return new ColumnTransform(INTEGER, block -> bucketTimestamp(block, count));
             }
             if (isVarcharType(type)) {
                 return new ColumnTransform(INTEGER, block -> bucketVarchar(block, count));

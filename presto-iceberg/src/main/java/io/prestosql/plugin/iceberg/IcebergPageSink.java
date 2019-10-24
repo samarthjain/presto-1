@@ -28,8 +28,12 @@ import io.prestosql.spi.PageIndexer;
 import io.prestosql.spi.PageIndexerFactory;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.block.Block;
+import io.prestosql.spi.block.BlockBuilderStatus;
+import io.prestosql.spi.block.LongArrayBlockBuilder;
+import io.prestosql.spi.block.PageBuilderStatus;
 import io.prestosql.spi.connector.ConnectorPageSink;
 import io.prestosql.spi.connector.ConnectorSession;
+import io.prestosql.spi.type.DateTimeEncoding;
 import io.prestosql.spi.type.DecimalType;
 import io.prestosql.spi.type.StandardTypes;
 import io.prestosql.spi.type.Type;
@@ -54,8 +58,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
@@ -65,9 +71,9 @@ import static io.prestosql.plugin.hive.ParquetRecordWriterUtil.setParquetSchema;
 import static io.prestosql.plugin.hive.metastore.StorageFormat.fromHiveStorageFormat;
 import static io.prestosql.plugin.hive.util.ConfigurationUtils.toJobConf;
 import static io.prestosql.plugin.iceberg.IcebergErrorCode.ICEBERG_TOO_MANY_OPEN_PARTITIONS;
+import static io.prestosql.plugin.iceberg.ParquetSchemaUtil.convert;
 import static io.prestosql.plugin.iceberg.PartitionTransforms.getColumnTransform;
 import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
-import static io.prestosql.spi.type.DateTimeEncoding.unpackMillisUtc;
 import static io.prestosql.spi.type.Decimals.readBigDecimal;
 import static java.lang.Float.intBitsToFloat;
 import static java.lang.Math.toIntExact;
@@ -77,7 +83,6 @@ import static java.util.UUID.randomUUID;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
-import static org.apache.iceberg.parquet.ParquetSchemaUtil.convert;
 
 public class IcebergPageSink
         implements ConnectorPageSink
@@ -97,6 +102,7 @@ public class IcebergPageSink
     private final TypeManager typeManager;
     private final FileFormat fileFormat;
     private final PagePartitioner pagePartitioner;
+    private final Set<Integer> timestampWithTimeZoneIndexes;
 
     private final List<WriteContext> writers = new ArrayList<>();
 
@@ -130,6 +136,10 @@ public class IcebergPageSink
         this.fileFormat = requireNonNull(fileFormat, "fileFormat is null");
         this.inputColumns = ImmutableList.copyOf(inputColumns);
         this.pagePartitioner = new PagePartitioner(pageIndexerFactory, toPartitionColumns(typeManager, inputColumns, partitionSpec));
+        this.timestampWithTimeZoneIndexes = inputColumns.stream()
+                .filter(col -> col.getTypeSignature().getBase().equals(StandardTypes.TIMESTAMP_WITH_TIME_ZONE))
+                .map(col -> col.getHiveColumnIndex())
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -153,9 +163,41 @@ public class IcebergPageSink
     @Override
     public CompletableFuture<?> appendPage(Page page)
     {
-        hdfsEnvironment.doAs(session.getUser(), () -> doAppend(page));
+        if (timestampWithTimeZoneIndexes.isEmpty()) {
+            hdfsEnvironment.doAs(session.getUser(), () -> doAppend(page));
+        }
+        else {
+            hdfsEnvironment.doAs(session.getUser(), () -> doAppend(transformPageForTimeStampWithTimeZone(page)));
+        }
 
         return NOT_BLOCKED;
+    }
+
+    // We need to unpack the timestamp with timezones so the parquet writers only get the value based on
+    private Page transformPageForTimeStampWithTimeZone(Page page)
+    {
+        Block[] blocks = new Block[page.getChannelCount()];
+        int positionCount = page.getPositionCount();
+        for (Integer index = 0; index < page.getChannelCount(); index++) {
+            Block block = page.getBlock(index);
+            if (timestampWithTimeZoneIndexes.contains(index)) {
+                LongArrayBlockBuilder blockBuilder = new LongArrayBlockBuilder(new BlockBuilderStatus(new PageBuilderStatus()), positionCount);
+                for (int i = 0; i < positionCount; i++) {
+                    if (block.isNull(i)) {
+                        blockBuilder.appendNull();
+                    }
+                    else {
+                        long timestampWithZone = block.getLong(i, 0);
+                        long millisUtc = DateTimeEncoding.unpackMillisUtc(timestampWithZone);
+                        blockBuilder.writeLong(millisUtc);
+                    }
+                }
+                block = blockBuilder.build();
+            }
+            blocks[index] = block;
+        }
+
+        return new Page(positionCount, blocks);
     }
 
     @Override
@@ -407,7 +449,8 @@ public class IcebergPageSink
             case StandardTypes.TIMESTAMP:
                 return MILLISECONDS.toMicros(type.getLong(block, position));
             case StandardTypes.TIMESTAMP_WITH_TIME_ZONE:
-                return MILLISECONDS.toMicros(unpackMillisUtc(type.getLong(block, position)));
+                // return MILLISECONDS.toMicros(unpackMillisUtc(type.getLong(block, position)));
+                return MILLISECONDS.toMicros(type.getLong(block, position));
             case StandardTypes.VARBINARY:
                 return type.getSlice(block, position).getBytes();
             case StandardTypes.VARCHAR:

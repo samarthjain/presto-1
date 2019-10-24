@@ -39,13 +39,7 @@
         <dependency>
             <groupId>com.netflix.iceberg</groupId>
             <artifactId>bdp-iceberg</artifactId>
-            <version>0.6.0-rc-5</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.3.1</version>
+            <version>0.7.0-rc.1</version>
         </dependency>
 
         <dependency>
@@ -125,19 +119,19 @@
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <optional>true</optional>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
         </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>com.google.code.findbugs</groupiceberg-coreId>-->
+            <!--<artifactId>jsr305</artifactId>-->
+            <!--<optional>true</optional>-->
+        <!--</dependency>-->
 
         <!-- used by tests but also needed transitively -->
         <dependency>
@@ -147,40 +141,47 @@
         </dependency>
 
         <!-- Iceberg -->
-        <dependency>
-            <groupId>${dep.iceberg.groupId}</groupId>
-            <artifactId>iceberg-api</artifactId>
-            <version>${dep.iceberg.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>${dep.iceberg.groupId}</groupId>-->
+            <!--<artifactId>iceberg-api</artifactId>-->
+            <!--<version>${dep.iceberg.version}</version>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>${dep.iceberg.groupId}</groupId>-->
+            <!--<artifactId>iceberg-core</artifactId>-->
+            <!--<version>${dep.iceberg.version}</version>-->
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.apache.avro</groupId>-->
+                    <!--<artifactId>avro</artifactId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>${dep.iceberg.groupId}</groupId>-->
+            <!--<artifactId>iceberg-hive</artifactId>-->
+            <!--<version>${dep.iceberg.version}</version>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>netflix</groupId>-->
+            <!--<artifactId>brotli-codec</artifactId>-->
+            <!--<version>0.1.8</version>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>org.apache.commons</groupId>-->
+            <!--<artifactId>commons-compress</artifactId>-->
+            <!--<version>1.12</version>-->
+        <!--</dependency>-->
 
         <dependency>
-            <groupId>${dep.iceberg.groupId}</groupId>
-            <artifactId>iceberg-core</artifactId>
-            <version>${dep.iceberg.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.avro</groupId>
-                    <artifactId>avro</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>${dep.iceberg.groupId}</groupId>
-            <artifactId>iceberg-hive</artifactId>
-            <version>${dep.iceberg.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>${dep.iceberg.groupId}</groupId>
-            <artifactId>iceberg-parquet</artifactId>
-            <version>${dep.iceberg.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.parquet</groupId>
-                    <artifactId>parquet-avro</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>netflix</groupId>
+            <artifactId>bdp-emr-credentials</artifactId>
+            <version>1.5.0</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Presto SPI -->

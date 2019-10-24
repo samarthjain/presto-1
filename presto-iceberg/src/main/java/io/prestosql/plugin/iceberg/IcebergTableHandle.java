@@ -36,10 +36,9 @@ import static java.util.Objects.requireNonNull;
 public class IcebergTableHandle
         implements ConnectorTableHandle
 {
-    private static final Pattern TABLE_PATTERN = Pattern.compile("" +
-            "(?<table>[^$@]+)" +
-            "(?:@(?<ver1>[0-9]+))?" +
-            "(?:\\$(?<type>[^@]+)(?:@(?<ver2>[0-9]+))?)?");
+    private static final Pattern TABLE_PATTERN = Pattern.compile("(?<table>(?:[^$@_]|_[^$@_])+)" +
+            "(?:(?:@|__)(?<ver1>\\d+))?" +
+            "(?:(?:\\$|__)(?<type>(?:history|snapshots|manifests|partitions))(?:(?:@|__)(?<ver2>\\d+))?)?");
 
     private final String schemaName;
     private final String tableName;
@@ -107,39 +106,40 @@ public class IcebergTableHandle
     {
         Matcher match = TABLE_PATTERN.matcher(name.getTableName());
         if (match.matches()) {
-                String table = match.group("table");
-                String typeStr = match.group("type");
-                String ver1 = match.group("ver1");
-                String ver2 = match.group("ver2");
+            String table = match.group("table");
+            String typeStr = match.group("type");
+            String ver1 = match.group("ver1");
+            String ver2 = match.group("ver2");
 
-                TableType type = DATA;
-                if (typeStr != null) {
-                    try {
-                        type = TableType.valueOf(typeStr.toUpperCase(Locale.ROOT));
-                    } catch (IllegalArgumentException e) {
-                        throw new PrestoException(NOT_SUPPORTED, format("Invalid Iceberg table name (unknown type '%s'): %s", typeStr, name));
-                    }
+            TableType type = DATA;
+            if (typeStr != null) {
+                try {
+                    type = TableType.valueOf(typeStr.toUpperCase(Locale.ROOT));
                 }
+                catch (IllegalArgumentException e) {
+                    throw new PrestoException(NOT_SUPPORTED, format("Invalid Iceberg table name (unknown type '%s'): %s", typeStr, name));
+                }
+            }
 
-                Optional<Long> version = Optional.empty();
-                if (type == DATA ||
-                        type == TableType.PARTITIONS ||
-                        type == TableType.MANIFESTS) {
-                    Preconditions.checkArgument(ver1 == null || ver2 == null,
-                            "Cannot specify two versions");
-                    if (ver1 != null) {
-                        version = Optional.ofNullable(parseLong(ver1));
-                    }
-                    else if (ver2 != null) {
-                        version = Optional.ofNullable(parseLong(ver2));
-                    }
+            Optional<Long> version = Optional.empty();
+            if (type == DATA ||
+                    type == TableType.PARTITIONS ||
+                    type == TableType.MANIFESTS) {
+                Preconditions.checkArgument(ver1 == null || ver2 == null,
+                        "Cannot specify two versions");
+                if (ver1 != null) {
+                    version = Optional.ofNullable(parseLong(ver1));
                 }
-                else {
-                    Preconditions.checkArgument(ver1 == null && ver2 == null,
-                            "Cannot use version with table type %s: %s", typeStr, name.getTableName());
+                else if (ver2 != null) {
+                    version = Optional.ofNullable(parseLong(ver2));
                 }
+            }
+            else {
+                Preconditions.checkArgument(ver1 == null && ver2 == null,
+                        "Cannot use version with table type %s: %s", typeStr, name.getTableName());
+            }
 
-                return new IcebergTableHandle(name.getSchemaName(), table, type, version, TupleDomain.all());
+            return new IcebergTableHandle(name.getSchemaName(), table, type, version, TupleDomain.all());
         }
 
         return new IcebergTableHandle(name.getSchemaName(), name.getTableName(), DATA, Optional.empty(), TupleDomain.all());

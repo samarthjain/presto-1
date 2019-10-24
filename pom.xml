@@ -39,11 +39,13 @@
             <name>Netflix Artifactory</name>
             <url>http://artifacts.netflix.com/nfrepo-everything-pom</url>
         </repository>
+
         <repository>
             <id>libs-releases-local</id>
             <name>Netflix Artifactory</name>
             <url>https://artifacts.netflix.com/libs-releases-local</url>
         </repository>
+
         <repository>
             <id>libs-candidates-local-pom</id>
             <name>Netflix Artifactory</name>
@@ -55,7 +57,6 @@
             <name>Netflix Artifactory</name>
             <url>http://artifacts.netflix.com/libs-candidates-local</url>
         </repository>
-
     </repositories>
 
 
@@ -457,7 +458,7 @@
             <dependency>
                 <groupId>io.prestosql.hive</groupId>
                 <artifactId>hive-apache</artifactId>
-                <version>3.0.0-3</version>
+                <version>3.0.0-6-nflx</version>
             </dependency>
 
             <dependency>
@@ -1198,8 +1199,48 @@
                 <groupId>org.checkerframework</groupId>
                 <artifactId>checker-qual</artifactId>
                 <version>2.8.2</version>
-
             </dependency>
+
+            <dependency>
+                <groupId>netflix</groupId>
+                <artifactId>metacat-client</artifactId>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.ws.rs</groupId>
+                        <artifactId>jsr311-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.ws.rs</groupId>
+                        <artifactId>javax.ws.rs-api</artifactId>
+                    </exclusion>
+                </exclusions>
+                <version>1.110</version>
+            </dependency>
+
+            <dependency>
+                <groupId>netflix</groupId>
+                <artifactId>metacat-common</artifactId>
+                <version>1.109.0</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.ws.rs</groupId>
+                        <artifactId>jsr311-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.ws.rs</groupId>
+                        <artifactId>javax.ws.rs-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

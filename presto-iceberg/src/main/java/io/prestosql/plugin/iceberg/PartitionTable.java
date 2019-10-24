@@ -62,7 +62,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.prestosql.plugin.iceberg.IcebergUtil.getIdentityPartitions;
 import static io.prestosql.plugin.iceberg.TypeConveter.toPrestoType;
 import static io.prestosql.spi.type.BigintType.BIGINT;
 import static io.prestosql.spi.type.DateTimeEncoding.packDateTimeWithZone;
@@ -116,7 +115,7 @@ public class PartitionTable
                 .collect(toImmutableList());
         columnMetadataBuilder.addAll(partitionColumnsMetadata);
 
-        Set<Integer> identityPartitionIds = getIdentityPartitions(icebergTable.spec()).keySet().stream()
+        Set<Integer> identityPartitionIds = IcebergUtil.getPartitions(icebergTable.spec(), true).keySet().stream()
                 .map(PartitionField::sourceId)
                 .collect(toSet());
 
@@ -163,7 +162,7 @@ public class PartitionTable
     {
         // TODO instead of cursor use pageSource method.
         try (ThreadContextClassLoader ignored = new ThreadContextClassLoader(getClass().getClassLoader())) {
-            TableScan tableScan = getTableScan(constraint);
+            TableScan tableScan = getTableScan(constraint).includeColumnStats();
             Map<StructLikeWrapper, Partition> partitions = getPartitions(tableScan);
             return buildRecordCursor(partitions, icebergTable.spec().fields());
         }
@@ -341,14 +340,14 @@ public class PartitionTable
             this.recordCount = recordCount;
             this.fileCount = 1;
             this.size = size;
-            this.minValues = ImmutableMap.copyOf(requireNonNull(minValues, "minValues is null"));
-            this.maxValues = ImmutableMap.copyOf(requireNonNull(maxValues, "maxValues is null"));
+            this.minValues = new HashMap<>(requireNonNull(minValues, "minValues is null"));
+            this.maxValues = new HashMap<>(requireNonNull(maxValues, "maxValues is null"));
             // we are assuming if minValues is not present, max will be not be present either.
             this.corruptedStats = nonPartitionPrimitiveColumns.stream()
                     .map(Types.NestedField::fieldId)
                     .filter(id -> !minValues.containsKey(id) && (nullCounts == null || !nullCounts.containsKey(id) || nullCounts.get(id) != recordCount))
                     .collect(toCollection(HashSet::new));
-            this.nullCounts = nullCounts != null ? new HashMap<>(nullCounts): new HashMap<>();
+            this.nullCounts = nullCounts != null ? new HashMap<>(nullCounts) : new HashMap<>();
         }
 
         public StructLike getValues()

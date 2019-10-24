@@ -15,6 +15,7 @@ package io.prestosql.plugin.iceberg;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.netflix.iceberg.metacat.MetacatIcebergCatalog;
 import io.prestosql.plugin.hive.HiveColumnHandle;
 import io.prestosql.plugin.hive.HiveColumnHandle.ColumnType;
 import io.prestosql.plugin.hive.HiveType;
@@ -25,17 +26,19 @@ import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.type.TypeManager;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
-import org.apache.iceberg.TableOperations;
 import org.apache.iceberg.TableScan;
+import org.apache.iceberg.catalog.Namespace;
+import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.expressions.Expression;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
+
+import javax.inject.Inject;
 
 import java.util.List;
 import java.util.Locale;
@@ -58,18 +61,33 @@ import static org.apache.iceberg.TableProperties.DEFAULT_FILE_FORMAT_DEFAULT;
 final class IcebergUtil
 {
     private static final TypeTranslator TYPE_TRANSLATOR = new HiveTypeTranslator();
+    public static final String NETFLIX_METACAT_HOST = "netflix.metacat.host";
+    public static final String NETFLIX_WAREHOUSE_DIR = "hive.metastore.warehouse.dir";
+    public static final String APP_NAME = "presto-" + System.getenv("stack");
 
-    private IcebergUtil() {}
+    private final IcebergConfig config;
+
+    @Inject
+    public IcebergUtil(IcebergConfig config)
+    {
+        this.config = config;
+    }
 
     public static boolean isIcebergTable(io.prestosql.plugin.hive.metastore.Table table)
     {
         return ICEBERG_TABLE_TYPE_VALUE.equalsIgnoreCase(table.getParameters().get(TABLE_TYPE_PROP));
     }
 
-    public static Table getIcebergTable(String database, String tableName, Configuration configuration, HiveMetastore metastore)
+    public Table getIcebergTable(String database, String tableName, Configuration configuration, HiveMetastore metastore)
     {
-        TableOperations operations = new HiveTableOperations(configuration, metastore, database, tableName);
-        return new BaseTable(operations, database + "." + tableName);
+        return getCatalog(configuration).loadTable(toTableIdentifier(config, database, tableName));
+    }
+
+    public MetacatIcebergCatalog getCatalog(Configuration configuration)
+    {
+        configuration.set(NETFLIX_METACAT_HOST, config.getMetastoreRestEndpoint());
+        configuration.set(NETFLIX_WAREHOUSE_DIR, config.getMetastoreWarehoseDir());
+        return new MetacatIcebergCatalog(configuration, APP_NAME);
     }
 
     public static List<HiveColumnHandle> getColumns(Schema schema, PartitionSpec spec, TypeManager typeManager)
@@ -77,7 +95,7 @@ final class IcebergUtil
         // Iceberg may or may not store identity columns in data file and the identity transformations have the same name as data column.
         // So we remove the identity columns from the set of regular columns which does not work with some of Presto's validation.
 
-        List<PartitionField> partitionFields = ImmutableList.copyOf(getIdentityPartitions(spec).keySet());
+        List<PartitionField> partitionFields = ImmutableList.copyOf(getPartitions(spec, false).keySet());
         Map<String, PartitionField> partitionColumnNames = uniqueIndex(partitionFields, PartitionField::name);
 
         int columnIndex = 0;
@@ -104,7 +122,7 @@ final class IcebergUtil
 
     public static List<HiveColumnHandle> getPartitionColumns(Schema schema, PartitionSpec spec, TypeManager typeManager)
     {
-        List<PartitionField> partitionFields = ImmutableList.copyOf(getIdentityPartitions(spec).keySet());
+        List<PartitionField> partitionFields = ImmutableList.copyOf(getPartitions(spec, true).keySet());
 
         int columnIndex = 0;
         ImmutableList.Builder<HiveColumnHandle> builder = ImmutableList.builder();
@@ -129,13 +147,13 @@ final class IcebergUtil
         return prestoType;
     }
 
-    public static Map<PartitionField, Integer> getIdentityPartitions(PartitionSpec partitionSpec)
+    public static Map<PartitionField, Integer> getPartitions(PartitionSpec partitionSpec, boolean identityPartitionsOnly)
     {
         // TODO: expose transform information in Iceberg library
         ImmutableMap.Builder<PartitionField, Integer> columns = ImmutableMap.builder();
         for (int i = 0; i < partitionSpec.fields().size(); i++) {
             PartitionField field = partitionSpec.fields().get(i);
-            if (field.transform().toString().equals("identity")) {
+            if (identityPartitionsOnly == false || (identityPartitionsOnly && field.transform().toString().equals("identity"))) {
                 columns.put(field, i);
             }
         }
@@ -170,5 +188,11 @@ final class IcebergUtil
     {
         return stream(icebergTable.snapshots())
                 .anyMatch(snapshot -> snapshot.snapshotId() == id);
+    }
+
+    public static TableIdentifier toTableIdentifier(IcebergConfig icebergConfig, String db, String tableName)
+    {
+        Namespace namespace = Namespace.of(icebergConfig.getMetacatCatalogName(), db);
+        return TableIdentifier.of(namespace, tableName);
     }
 }

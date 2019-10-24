@@ -41,6 +41,7 @@ import java.util.Properties;
 import static io.prestosql.plugin.hive.HiveSessionProperties.getParquetWriterBlockSize;
 import static io.prestosql.plugin.hive.HiveSessionProperties.getParquetWriterPageSize;
 import static org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils.getTypeInfosFromTypeString;
+import static org.apache.parquet.hadoop.ParquetOutputFormat.ENABLE_DICTIONARY;
 
 public final class ParquetRecordWriterUtil
 {
@@ -116,7 +117,9 @@ public final class ParquetRecordWriterUtil
             MessageType schema = HiveSchemaConverter.convert(columnNames, columnTypes);
             setParquetSchema(conf, schema);
         }
-
+        // TOOD: we should only do this for decimal types
+        conf.setBoolean(ENABLE_DICTIONARY, false);
+        // conf.setStrings(WRITER_VERSION, "v2");
         ParquetOutputFormat<ParquetHiveRecord> outputFormat = new ParquetOutputFormat<>(new DataWritableWriteSupport());
 
         return new ParquetRecordWriterWrapper(outputFormat, conf, target.toString(), Reporter.NULL, properties);

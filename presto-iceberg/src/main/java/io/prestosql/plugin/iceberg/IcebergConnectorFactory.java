@@ -26,6 +26,7 @@ import io.prestosql.plugin.hive.NodeVersion;
 import io.prestosql.plugin.hive.authentication.HiveAuthenticationModule;
 import io.prestosql.plugin.hive.metastore.HiveMetastoreModule;
 import io.prestosql.plugin.hive.s3.HiveS3Module;
+import io.prestosql.plugin.hive.security.HiveSecurityModule;
 import io.prestosql.spi.NodeManager;
 import io.prestosql.spi.PageIndexerFactory;
 import io.prestosql.spi.classloader.ThreadContextClassLoader;
@@ -75,6 +76,7 @@ public class IcebergConnectorFactory
                     new JsonModule(),
                     new IcebergModule(),
                     new HiveS3Module(),
+                    new HiveSecurityModule(),
                     new HiveAuthenticationModule(),
                     new HiveMetastoreModule(Optional.empty()),
                     new MBeanServerModule(),
