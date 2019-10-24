@@ -13,7 +13,6 @@
  */
 package io.prestosql.plugin.hive;
 
-import com.facebook.presto.hive.PrestoHdfsCacheStats;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
