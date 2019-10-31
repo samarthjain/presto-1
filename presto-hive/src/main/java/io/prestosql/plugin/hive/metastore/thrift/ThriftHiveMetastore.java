@@ -411,7 +411,7 @@ public class ThriftHiveMetastore
                     .stopOnIllegalExceptions()
                     .run("setTableColumnStatistics", stats.getCreateDatabase().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
-                            client.setTableColumnStatistics(databaseName, tableName, statistics);
+                            // client.setTableColumnStatistics(databaseName, tableName, statistics);
                         }
                         return null;
                     }));
@@ -435,7 +435,7 @@ public class ThriftHiveMetastore
                     .stopOnIllegalExceptions()
                     .run("deleteTableColumnStatistics", stats.getCreateDatabase().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
-                            client.deleteTableColumnStatistics(databaseName, tableName, columnName);
+                            // client.deleteTableColumnStatistics(databaseName, tableName, columnName);
                         }
                         return null;
                     }));
@@ -502,7 +502,7 @@ public class ThriftHiveMetastore
                     .stopOnIllegalExceptions()
                     .run("setPartitionColumnStatistics", stats.getCreateDatabase().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
-                            client.setPartitionColumnStatistics(databaseName, tableName, partitionName, statistics);
+                            // client.setPartitionColumnStatistics(databaseName, tableName, partitionName, statistics);
                         }
                         return null;
                     }));
@@ -526,7 +526,7 @@ public class ThriftHiveMetastore
                     .stopOnIllegalExceptions()
                     .run("deletePartitionColumnStatistics", stats.getCreateDatabase().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
-                            client.deletePartitionColumnStatistics(databaseName, tableName, partitionName, columnName);
+                             // client.deletePartitionColumnStatistics(databaseName, tableName, partitionName, columnName);
                         }
                         return null;
                     }));

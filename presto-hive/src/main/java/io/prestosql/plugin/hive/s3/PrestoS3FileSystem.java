@@ -72,6 +72,8 @@ import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 
+import javax.annotation.Nullable;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -92,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import static com.amazonaws.regions.Regions.US_EAST_1;
 import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
@@ -283,7 +286,7 @@ public class PrestoS3FileSystem
     }
 
     @Override
-    public RemoteIterator<LocatedFileStatus> listLocatedStatus(Path path)
+    public RemoteIterator<LocatedFileStatus> listLocatedStatus(Path path) throws IOException
     {
         STATS.newListLocatedStatusCall();
         return new RemoteIterator<LocatedFileStatus>()
@@ -499,7 +502,10 @@ public class PrestoS3FileSystem
                 .withDelimiter(PATH_SEPARATOR);
 
         STATS.newListObjectsCall();
-        Iterator<ObjectListing> listings = new AbstractSequentialIterator<ObjectListing>(s3.listObjects(request))
+
+        ObjectListing objectListing = listRetry(() -> s3.listObjects(request), path);
+
+        Iterator<ObjectListing> listings = new AbstractSequentialIterator<ObjectListing>(objectListing)
         {
             @Override
             protected ObjectListing computeNext(ObjectListing previous)
@@ -507,11 +513,57 @@ public class PrestoS3FileSystem
                 if (!previous.isTruncated()) {
                     return null;
                 }
-                return s3.listNextBatchOfObjects(previous);
+
+                return listRetry(() -> s3.listNextBatchOfObjects(previous), path);
             }
         };
 
         return Iterators.concat(Iterators.transform(listings, this::statusFromListing));
+    }
+
+    private <T> T listRetry(Supplier<T> supplier, Path path)
+    {
+        try {
+            return retry()
+                    .maxAttempts(maxAttempts)
+                    .exponentialBackoff(BACKOFF_MIN_SLEEP, maxBackoffTime, maxRetryTime, 2.0)
+                    .stopOn(InterruptedException.class, UnrecoverableS3OperationException.class)
+                    .onRetry(STATS::newListRetry)
+                    .run("listS3Object", () -> {
+                        try {
+                            return supplier.get();
+                        }
+                        catch (RuntimeException e) {
+                            STATS.newListObjectErrors();
+                            handleS3Exception(e, path);
+                            throw e;
+                        }
+                    });
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+        catch (Exception e) {
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Nullable
+    private ObjectListing handleS3Exception(RuntimeException e, Path path)
+            throws UnrecoverableS3OperationException
+    {
+        if (e instanceof AmazonS3Exception) {
+            switch (((AmazonS3Exception) e).getStatusCode()) {
+                case HTTP_NOT_FOUND:
+                    return null;
+                case HTTP_FORBIDDEN:
+                case HTTP_BAD_REQUEST:
+                    throw new UnrecoverableS3OperationException(path, e);
+            }
+        }
+        throw e;
     }
 
     private Iterator<LocatedFileStatus> statusFromListing(ObjectListing listing)
@@ -600,15 +652,7 @@ public class PrestoS3FileSystem
                         }
                         catch (RuntimeException e) {
                             STATS.newGetMetadataError();
-                            if (e instanceof AmazonS3Exception) {
-                                switch (((AmazonS3Exception) e).getStatusCode()) {
-                                    case HTTP_NOT_FOUND:
-                                        return null;
-                                    case HTTP_FORBIDDEN:
-                                    case HTTP_BAD_REQUEST:
-                                        throw new UnrecoverableS3OperationException(path, e);
-                                }
-                            }
+                            handleS3Exception(e, path);
                             throw e;
                         }
                     });
