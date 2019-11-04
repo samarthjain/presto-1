@@ -535,8 +535,10 @@ public class PrestoS3FileSystem
                         }
                         catch (RuntimeException e) {
                             STATS.newListObjectErrors();
-                            handleS3Exception(e, path);
-                            throw e;
+                            if (handleS3Exception(e, path) == null) {
+                                return null;
+                            }
+                            throw e; // unreachable
                         }
                     });
         }
@@ -652,8 +654,10 @@ public class PrestoS3FileSystem
                         }
                         catch (RuntimeException e) {
                             STATS.newGetMetadataError();
-                            handleS3Exception(e, path);
-                            throw e;
+                            if (handleS3Exception(e, path) == null) {
+                                return null;
+                            }
+                            throw e; //unreachable
                         }
                     });
         }
