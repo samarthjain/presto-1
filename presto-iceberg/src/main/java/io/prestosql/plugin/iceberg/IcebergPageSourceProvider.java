@@ -283,7 +283,7 @@ public class IcebergPageSourceProvider
         ImmutableMap.Builder<String, HiveColumnHandle> builder = ImmutableMap.builder();
         Map<Integer, String> parquetIdToName = fields.stream()
                 .filter(field -> field.getId() != null)
-                .collect(Collectors.toMap((x) -> x.getId().intValue(), Type::getName));
+                .collect(Collectors.toMap((x) -> x.getId().intValue(), (f) -> f.getName().replaceAll("\\s+", "_")));
 
         for (HiveColumnHandle column : columns) {
             if (!column.isHidden()) {

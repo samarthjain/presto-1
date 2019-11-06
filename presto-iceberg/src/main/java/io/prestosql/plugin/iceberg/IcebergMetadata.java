@@ -57,6 +57,7 @@ import org.apache.iceberg.PartitionSpecParser;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.SchemaParser;
 import org.apache.iceberg.Transaction;
+import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.hadoop.HadoopInputFile;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
@@ -298,7 +299,10 @@ public class IcebergMetadata
         String tableName = schemaTableName.getTableName();
 
         Schema schema = new Schema(toIceberg(tableMetadata.getColumns()));
-
+//        if we use this reassigned schema we run into issues for partitioned tables.
+//        so for now we are letting go of atomicity and just creating the table.
+//        AtomicInteger lastColumnId = new AtomicInteger(0);
+//        Schema freshSchema = TypeUtil.assignFreshIds(schema, lastColumnId::incrementAndGet);
         PartitionSpec partitionSpec = parsePartitionFields(schema, getPartitioning(tableMetadata.getProperties()));
 
         Database database = metastore.getDatabase(schemaName)
@@ -309,14 +313,17 @@ public class IcebergMetadata
         Configuration configuration = hdfsEnvironment.getConfiguration(hdfsContext, targetPath);
 
         MetacatIcebergCatalog catalog = icebergUtil.getCatalog(configuration);
-        this.transaction = catalog.newCreateTableTransaction(toTableIdentifier(icebergConfig, schemaName, tableName), schema, partitionSpec, null, null);
-
+        TableIdentifier tableIdentifier = toTableIdentifier(icebergConfig, schemaName, tableName);
+        catalog.createTable(tableIdentifier, schema, partitionSpec, null, null);
+        org.apache.iceberg.Table icebergTable = icebergUtil.getIcebergTable(schemaName, tableName, configuration, metastore);
+        //this.transaction = catalog.newCreateTableTransaction(toTableIdentifier(icebergConfig, schemaName, tableName), schema, partitionSpec, null, null);
+        this.transaction = icebergTable.newTransaction();
         return new IcebergWritableTableHandle(
                 schemaName,
                 tableName,
-                SchemaParser.toJson(schema),
-                PartitionSpecParser.toJson(partitionSpec),
-                getColumns(schema, partitionSpec, typeManager),
+                SchemaParser.toJson(icebergTable.schema()),
+                PartitionSpecParser.toJson(icebergTable.spec()),
+                getColumns(icebergTable.schema(), icebergTable.spec(), typeManager),
                 targetPath.toString(),
                 getFileFormat(tableMetadata.getProperties()));
     }

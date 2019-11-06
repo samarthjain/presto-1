@@ -50,6 +50,7 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.hadoop.HadoopInputFile;
 import org.apache.iceberg.parquet.ParquetUtil;
 import org.apache.iceberg.transforms.Transform;
+import org.apache.iceberg.types.Types;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -370,20 +371,32 @@ public class IcebergPageSink
     private HiveFileWriter createParquetWriter(Path outputPath)
     {
         Properties properties = new Properties();
-        properties.setProperty(IOConstants.COLUMNS, inputColumns.stream()
-                .map(HiveColumnHandle::getName)
-                .collect(joining(",")));
+        List<String> columnNames = inputColumns.stream().map(handle -> handle.getName().replaceAll("\\s+", "_")).collect(Collectors.toList());
+        properties.setProperty(IOConstants.COLUMNS, columnNames.stream().collect(joining(",")));
         properties.setProperty(IOConstants.COLUMNS_TYPES, inputColumns.stream()
                 .map(column -> column.getHiveType().getHiveTypeName().toString())
                 .collect(joining(":")));
 
-        setParquetSchema(jobConf, convert(outputSchema, "table"));
+        List<Types.NestedField> fields = new ArrayList<>();
+        for (Types.NestedField field : outputSchema.columns()) {
+            if (field.name().contains(" ")) {
+                String name = field.name().replaceAll("\\s+", "_");
+                if (field.isOptional()) {
+                    fields.add(Types.NestedField.optional(field.fieldId(), name, field.type(), field.doc()));
+                }
+                else {
+                    fields.add(Types.NestedField.required(field.fieldId(), name, field.type(), field.doc()));
+                }
+            }
+            else {
+                fields.add(field);
+            }
+        }
+        setParquetSchema(jobConf, convert(new Schema(fields), "table"));
 
         return new RecordFileWriter(
                 outputPath,
-                inputColumns.stream()
-                        .map(HiveColumnHandle::getName)
-                        .collect(toImmutableList()),
+                columnNames,
                 fromHiveStorageFormat(HiveStorageFormat.PARQUET),
                 properties,
                 HiveStorageFormat.PARQUET.getEstimatedWriterSystemMemoryUsage(),
