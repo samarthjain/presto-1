@@ -16,6 +16,8 @@ package io.prestosql.plugin.hive.netflix;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import io.prestosql.plugin.hive.security.AccessControlMetadata;
+import io.prestosql.plugin.hive.security.AccessControlMetadataFactory;
 import io.prestosql.spi.connector.ConnectorAccessControl;
 
 public class NetflixSecurityModule
@@ -24,6 +26,7 @@ public class NetflixSecurityModule
     @Override
     public void configure(Binder binder)
     {
+        binder.bind(AccessControlMetadataFactory.class).toInstance(metastore -> new AccessControlMetadata() {});
         binder.bind(ConnectorAccessControl.class).to(NetflixAccessControl.class).in(Scopes.SINGLETON);
     }
 }
