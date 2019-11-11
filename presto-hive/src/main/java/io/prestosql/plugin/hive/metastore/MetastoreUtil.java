@@ -22,6 +22,7 @@ import io.prestosql.spi.connector.SchemaTableName;
 import io.prestosql.spi.connector.TableNotFoundException;
 import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.metastore.ProtectMode;
+import org.apache.hadoop.hive.serde.serdeConstants;
 
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,8 @@ import static org.apache.hadoop.hive.serde.serdeConstants.SERIALIZATION_LIB;
 
 public class MetastoreUtil
 {
+    public static final String COLELCTION_DELIM = "colelction.delim";
+
     private MetastoreUtil()
     {
     }
@@ -113,6 +116,11 @@ public class MetastoreUtil
         for (Map.Entry<String, String> param : sd.getSerdeParameters().entrySet()) {
             schema.setProperty(param.getKey(), (param.getValue() != null) ? param.getValue() : "");
         }
+
+        if (schema.getProperty(COLELCTION_DELIM) != null) {
+            schema.setProperty(serdeConstants.COLLECTION_DELIM, schema.getProperty(COLELCTION_DELIM));
+        }
+
         schema.setProperty(SERIALIZATION_LIB, sd.getStorageFormat().getSerDe());
 
         StringBuilder columnNameBuilder = new StringBuilder();
