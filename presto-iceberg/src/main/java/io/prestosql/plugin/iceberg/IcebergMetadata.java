@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.prestosql.plugin.hive.HiveColumnHandle.PATH_COLUMN_NAME;
@@ -174,12 +175,20 @@ public class IcebergMetadata
     {
         TupleDomain<HiveColumnHandle> predicate = convertTupleDomainTypes(constraint.getSummary().transform(HiveColumnHandle.class::cast));
         IcebergTableHandle tableHandle = (IcebergTableHandle) handle;
+
+        // TODO: this will break delete when partitions have evolved. To actually make it work we have to support row level delete interfaces
+        // or change presto's SPI.
+        TupleDomain<ColumnHandle> nonPartitionPredicate = constraint.getSummary().getDomains()
+                .map(m -> m.entrySet().stream().filter(e -> ((HiveColumnHandle) e.getKey()).getColumnType() != HiveColumnHandle.ColumnType.PARTITION_KEY)
+                        .collect(Collectors.toMap((x) -> x.getKey(), Map.Entry::getValue)))
+                .map(m -> TupleDomain.withColumnDomains(m)).orElse(TupleDomain.none());
+
         IcebergTableHandle handleWithPredicate = new IcebergTableHandle(tableHandle.getSchemaName(),
                 tableHandle.getTableName(),
                 tableHandle.getTableType(),
                 tableHandle.getSnapshotId(),
                 predicate);
-        return Optional.of(new ConstraintApplicationResult<>(handleWithPredicate, constraint.getSummary()));
+        return Optional.of(new ConstraintApplicationResult<>(handleWithPredicate, nonPartitionPredicate));
     }
 
     @Override
@@ -299,7 +308,7 @@ public class IcebergMetadata
         String tableName = schemaTableName.getTableName();
 
         Schema schema = new Schema(toIceberg(tableMetadata.getColumns()));
-//        if we use this reassigned schema we run into issues for partitioned tables.
+//        TODO: if we use this reassigned schema we run into issues for partitioned tables.
 //        so for now we are letting go of atomicity and just creating the table.
 //        AtomicInteger lastColumnId = new AtomicInteger(0);
 //        Schema freshSchema = TypeUtil.assignFreshIds(schema, lastColumnId::incrementAndGet);
