@@ -33,14 +33,8 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static io.prestosql.spi.predicate.Marker.Bound.ABOVE;
 import static io.prestosql.spi.predicate.Marker.Bound.BELOW;
 import static io.prestosql.spi.predicate.Marker.Bound.EXACTLY;
-import static io.prestosql.spi.type.DateTimeEncoding.unpackMillisUtc;
-import static io.prestosql.spi.type.StandardTypes.TIME;
-import static io.prestosql.spi.type.StandardTypes.TIMESTAMP;
-import static io.prestosql.spi.type.StandardTypes.TIMESTAMP_WITH_TIME_ZONE;
-import static io.prestosql.spi.type.StandardTypes.TIME_WITH_TIME_ZONE;
 import static io.prestosql.spi.type.StandardTypes.VARBINARY;
 import static io.prestosql.spi.type.StandardTypes.VARCHAR;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.iceberg.expressions.Expressions.alwaysFalse;
 import static org.apache.iceberg.expressions.Expressions.alwaysTrue;
 import static org.apache.iceberg.expressions.Expressions.and;
@@ -171,12 +165,13 @@ public final class ExpressionConverter
     private static Object getValue(HiveColumnHandle columnHandle, Marker marker, ConnectorSession session)
     {
         switch (columnHandle.getTypeSignature().getBase()) {
-            case TIMESTAMP_WITH_TIME_ZONE:
-            case TIME_WITH_TIME_ZONE:
-                return MILLISECONDS.toMicros(unpackMillisUtc((Long) marker.getValue()));
-            case TIME:
-            case TIMESTAMP:
-                return MILLISECONDS.toMicros((Long) marker.getValue());
+//            DomainConverter already does this translation when its called from applyFilter so we don't have to do these anymore.
+//            case TIMESTAMP_WITH_TIME_ZONE:
+//            case TIME_WITH_TIME_ZONE:
+//                return MILLISECONDS.toMicros((Long) marker.getValue());
+//            case TIME:
+//            case TIMESTAMP:
+//                return MILLISECONDS.toMicros((Long) marker.getValue());
             case VARCHAR:
                 return ((Slice) marker.getValue()).toStringUtf8();
             case VARBINARY:
