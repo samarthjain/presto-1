@@ -29,9 +29,9 @@ public class JavaVersion
 {
     // As described in JEP-223
     private static final String VERSION_NUMBER = "(?<MAJOR>[1-9][0-9]*)(\\.(?<MINOR>(0|[1-9][0-9]*))(\\.(?:(0|[1-9][0-9]*)))?)?";
-    private static final String PRE = "(?:-(?:[a-zA-Z0-9]+))?";
+    private static final String PRE = "(?:[-|\\.](?:[a-zA-Z0-9]+))?";
     private static final String BUILD = "(?:(?:\\+)(?:0|[1-9][0-9]*)?)?";
-    private static final String OPT = "(?:-(?:[-a-zA-Z0-9.]+))?";
+    private static final String OPT = "(?:[-|\\.](?:[-a-zA-Z0-9.]+))?";
     private static final Pattern PATTERN = Pattern.compile(VERSION_NUMBER + PRE + BUILD + OPT);
 
     // For Java 8 and below
