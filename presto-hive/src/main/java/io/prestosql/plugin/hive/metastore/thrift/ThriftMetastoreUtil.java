@@ -45,6 +45,7 @@ import io.prestosql.spi.type.ArrayType;
 import io.prestosql.spi.type.DecimalType;
 import io.prestosql.spi.type.MapType;
 import io.prestosql.spi.type.RowType;
+import io.prestosql.spi.type.TimeWithTimeZoneType;
 import io.prestosql.spi.type.Type;
 import org.apache.hadoop.hive.metastore.api.BinaryColumnStatsData;
 import org.apache.hadoop.hive.metastore.api.BooleanColumnStatsData;
@@ -969,7 +970,7 @@ public final class ThriftMetastoreUtil
         if (type.equals(VARBINARY)) {
             return ImmutableSet.of(NUMBER_OF_NON_NULL_VALUES, TOTAL_SIZE_IN_BYTES, MAX_VALUE_SIZE_IN_BYTES);
         }
-        if (type instanceof ArrayType || type instanceof RowType || type instanceof MapType) {
+        if (type instanceof ArrayType || type instanceof RowType || type instanceof MapType || type instanceof TimeWithTimeZoneType) {
             return ImmutableSet.of();
         }
         // Throwing here to make sure this method is updated when a new type is added in Hive connector
