@@ -127,7 +127,7 @@ public class IcebergPageSourceProvider
                 length,
                 hiveColumns,
                 split.getNameToId(),
-                false,
+                true,
                 typeManager,
                 getParquetMaxReadBlockSize(session),
                 isFailOnCorruptedParquetStatistics(session),
