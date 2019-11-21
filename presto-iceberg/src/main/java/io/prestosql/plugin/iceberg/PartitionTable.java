@@ -285,7 +285,9 @@ public class PartitionTable
         if (idToMetricMap != null) {
             idToMetricMap.forEach((id, value) -> {
                 Type.PrimitiveType type = idToTypeMapping.get(id);
-                map.put(id, Conversions.fromByteBuffer(type, value));
+                if (type != null) {
+                    map.put(id, Conversions.fromByteBuffer(type, value));
+                }
             });
         }
         return map.build();
@@ -300,7 +302,7 @@ public class PartitionTable
             return value.toString();
         }
         if (type instanceof Types.BinaryType) {
-            // TODO the client sees the bytearray's tostring ouput instead of seeing actual bytes, needs to be fixed.
+            // TODO the client sees the bytearray's tostring output instead of seeing actual bytes, needs to be fixed.
             return ((ByteBuffer) value).array();
         }
         if (type instanceof Types.TimestampType) {
