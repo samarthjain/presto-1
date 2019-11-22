@@ -83,7 +83,6 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Sets.difference;
 import static io.prestosql.plugin.hive.HiveBasicStatistics.createEmptyStatistics;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_METASTORE_ERROR;
-import static io.prestosql.plugin.hive.HiveUtil.COMMON_VIEW_FLAG;
 import static io.prestosql.plugin.hive.HiveUtil.PRESTO_VIEW_FLAG;
 import static io.prestosql.plugin.hive.metastore.HivePrivilegeInfo.HivePrivilege;
 import static io.prestosql.plugin.hive.metastore.HivePrivilegeInfo.HivePrivilege.OWNERSHIP;
@@ -217,10 +216,6 @@ public class ThriftHiveMetastore
                     .run("getTable", stats.getGetTable().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
                             Table table = client.getTable(databaseName, tableName);
-                            if (table.getTableType().equals(TableType.VIRTUAL_VIEW.name()) &&
-                                    !isPrestoOrCommonView(table)) {
-                                throw new TException(databaseName + "." + tableName + " is not a Presto or Common View");
-                            }
                             return Optional.of(table);
                         }
                     }));
@@ -244,13 +239,9 @@ public class ThriftHiveMetastore
 
     private static boolean isPrestoOrCommonView(Table table)
     {
-        return "true".equals(table.getParameters().get(PRESTO_VIEW_FLAG)) ||
-                "true".equals(table.getParameters().get(COMMON_VIEW_FLAG));
-    }
-
-    public static boolean isCommonView(Table table)
-    {
-        return "true".equals(table.getParameters().get(COMMON_VIEW_FLAG));
+        // Instead of checking for PRESTO_VIEW_FLAG and COMMON_VIEW_FLAG, this method checks for a generic
+        // if the table type is a view. This is because Presto needs to continue to support legacy spark views.
+        return table.getTableType().equals(TableType.VIRTUAL_VIEW.name());
     }
 
     @Override
@@ -274,9 +265,9 @@ public class ThriftHiveMetastore
                     .stopOnIllegalExceptions()
                     .run("getTableColumnStatistics", stats.getGetTableColumnStatistics().wrap(() -> {
                         // metacat does not implement getTableColumnStatistics and we do not have the column level stats
-                       // try (HiveMetastoreClient client = clientProvider.createMetastoreClient()) {
-                       //     return groupStatisticsByColumn(client.getTableColumnStatistics(databaseName, tableName, columns), rowCount);
-                       // }
+                        // try (HiveMetastoreClient client = clientProvider.createMetastoreClient()) {
+                        //     return groupStatisticsByColumn(client.getTableColumnStatistics(databaseName, tableName, columns), rowCount);
+                        // }
 
                         return Collections.emptyMap();
                     }));
@@ -543,7 +534,7 @@ public class ThriftHiveMetastore
                     .stopOnIllegalExceptions()
                     .run("deletePartitionColumnStatistics", stats.getCreateDatabase().wrap(() -> {
                         try (ThriftMetastoreClient client = createMetastoreClient()) {
-                             // client.deletePartitionColumnStatistics(databaseName, tableName, partitionName, columnName);
+                            // client.deletePartitionColumnStatistics(databaseName, tableName, partitionName, columnName);
                         }
                         return null;
                     }));

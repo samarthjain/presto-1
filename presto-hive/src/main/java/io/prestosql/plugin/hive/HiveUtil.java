@@ -47,6 +47,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.JavaUtils;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat;
@@ -616,8 +617,9 @@ public final class HiveUtil
 
     public static boolean isPrestoOrCommonView(Table table)
     {
-        return "true".equals(table.getParameters().get(PRESTO_VIEW_FLAG)) ||
-                "true".equals(table.getParameters().get(COMMON_VIEW_FLAG));
+        // Instead of checking for PRESTO_VIEW_FLAG and COMMON_VIEW_FLAG, this method checks for a generic
+        // if the table type is a view. This is because Presto needs to continue to support legacy spark views.
+        return table.getTableType().equals(TableType.VIRTUAL_VIEW.name());
     }
 
     public static boolean isCommonView(Table table)

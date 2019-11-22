@@ -1651,21 +1651,31 @@ public class HiveMetadata
 
     public Optional<ConnectorViewDefinition> getPrestoViewDefinition(Optional<Table> view, SchemaTableName viewName)
     {
-        return view.filter(HiveUtil::isPrestoView)
+        return metastore.getTable(viewName.getSchemaName(), viewName.getTableName())
+                .filter(HiveUtil::isPrestoOrCommonView)
                 .map(v -> {
-                    ConnectorViewDefinition definition = decodeViewData(v.getViewOriginalText()
-                            .orElseThrow(() -> new PrestoException(HIVE_INVALID_METADATA, "No view original text: " + viewName)));
-                    // use owner from table metadata if it exists
-                    if (v.getOwner() != null && !definition.isRunAsInvoker()) {
-                        definition = new ConnectorViewDefinition(
-                                definition.getOriginalSql(),
-                                definition.getCatalog(),
-                                definition.getSchema(),
-                                definition.getColumns(),
-                                Optional.of(v.getOwner()),
-                                false);
+                    if ("true".equals(v.getParameters().get(PRESTO_VIEW_FLAG))) {
+                        ConnectorViewDefinition definition = decodeViewData(v.getViewOriginalText()
+                                .orElseThrow(() -> new PrestoException(HIVE_INVALID_METADATA, "No view original text: " + viewName)));
+                        // use owner from table metadata if it exists
+                        if (v.getOwner() != null && !definition.isRunAsInvoker()) {
+                            definition = new ConnectorViewDefinition(
+                                    definition.getOriginalSql(),
+                                    definition.getCatalog(),
+                                    definition.getSchema(),
+                                    definition.getColumns(),
+                                    Optional.of(v.getOwner()),
+                                    false);
+                        }
+                        return definition;
                     }
-                    return definition;
+                    else {
+                        return new ConnectorViewDefinition(
+                                v.getViewOriginalText().orElseThrow(() -> new IllegalStateException("original sql must not be missing")),
+                                v.getViewExpandedText(),
+                                Optional.of(viewName.getSchemaName()),
+                                Optional.of(v.getOwner().replaceAll("@.*", "")));
+                    }
                 });
     }
 
