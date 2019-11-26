@@ -13,6 +13,7 @@
  */
 package io.prestosql.plugin.hive.common;
 
+import com.google.common.base.Preconditions;
 import com.netflix.bdp.view.ViewDefinition;
 import com.netflix.iceberg.metacat.MetacatViewCatalog;
 import io.prestosql.plugin.hive.HdfsEnvironment;
@@ -95,7 +96,7 @@ public class CommonViewUtils
             namespaces.add(definition.getSchema().get());
         }
         ConnectorCommonViewDefinition connectorCommonViewDefinition = new
-                ConnectorCommonViewDefinition(definition.getOriginalSql(), definition.getCatalog(),
+                ConnectorCommonViewDefinition(definition.getOriginalSql(), definition.getCatalog().get(),
                 namespaces,
                 schema, definition.getOwner());
         encodeAndWriteCommonViewData(configuration, properties, connectorCommonViewDefinition, catalog, viewName,
@@ -110,8 +111,9 @@ public class CommonViewUtils
             boolean replace, boolean viewExists)
     {
         MetacatViewCatalog catalog = getViewCatalog(configuration);
+        Preconditions.checkState(definition.getCatalog() != null);
         ViewDefinition metadata = ViewDefinition.of(definition.getOriginalSql(), definition.getColumns(),
-                definition.getCatalog().isPresent() ? definition.getCatalog().get() : "", definition.getSchema());
+                definition.getCatalog(), definition.getSchema());
 
         String viewName = catalogName + "." + name.toString();
         if (viewExists) {
@@ -141,6 +143,11 @@ public class CommonViewUtils
                 Optional.empty(), false);
 
         return Optional.of(definition);
+    }
+
+    public void dropView(Configuration configuration, String catalogName, SchemaTableName name) {
+        MetacatViewCatalog catalog = getViewCatalog(configuration);
+        catalog.drop(catalogName + "." + name.toString());
     }
 
     public static Path getTargetPath(SchemaTableName name, HdfsEnvironment hdfsEnvironment, Database database,

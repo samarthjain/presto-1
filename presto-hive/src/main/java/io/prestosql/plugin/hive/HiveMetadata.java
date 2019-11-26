@@ -102,6 +102,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -178,7 +179,6 @@ import static io.prestosql.plugin.hive.HiveTableProperties.getTextFooterSkipCoun
 import static io.prestosql.plugin.hive.HiveTableProperties.getTextHeaderSkipCount;
 import static io.prestosql.plugin.hive.HiveType.HIVE_STRING;
 import static io.prestosql.plugin.hive.HiveType.toHiveType;
-import static io.prestosql.plugin.hive.HiveUtil.COMMON_VIEW_FLAG;
 import static io.prestosql.plugin.hive.HiveUtil.PRESTO_VIEW_FLAG;
 import static io.prestosql.plugin.hive.HiveUtil.columnExtraInfo;
 import static io.prestosql.plugin.hive.HiveUtil.decodeViewData;
@@ -1557,16 +1557,17 @@ public class HiveMetadata
 
         Map<String, String> properties;
         if (isCommonView) {
-            //String genieJobId = ((io.prestosql.FullConnectorSession) session).getSession().getSystemProperty("genie_job_id", String.class);
+            Map buildProps = new HashMap();
+            buildProps.put(PRESTO_VERSION_NAME, prestoVersion);
+            buildProps.put(PRESTO_QUERY_ID_NAME, session.getQueryId());
+            buildProps.put(CommonViewConstants.ENGINE_VERSION, prestoVersion);
+            buildProps.put(CommonViewConstants.GENIE_ID, session.getGenieJobId());
+            if (!replace) {
+                // Add a default table comment when the view is being created
+                buildProps.put(TABLE_COMMENT, "Common View created from Presto");
+            }
             properties = ImmutableMap.<String, String>builder()
-                    .put(TABLE_COMMENT, "Common View created from Presto")
-                    .put(COMMON_VIEW_FLAG, "true")
-                    .put(PRESTO_VERSION_NAME, prestoVersion)
-                    .put(PRESTO_QUERY_ID_NAME, session.getQueryId())
-                    .put(OWNER, session.getUser())
-                    .put(TABLE_TYPE, TableType.VIRTUAL_VIEW.name())
-                    .put(CommonViewConstants.ENGINE_VERSION, prestoVersion)
-                    //.put(CommonViewConstants.GENIE_ID, genieJobId)
+                    .putAll(buildProps)
                     .build();
         }
         else {
@@ -1575,8 +1576,6 @@ public class HiveMetadata
                     .put(PRESTO_VIEW_FLAG, "true")
                     .put(PRESTO_VERSION_NAME, prestoVersion)
                     .put(PRESTO_QUERY_ID_NAME, session.getQueryId())
-                    .put(OWNER, session.getUser())
-                    .put(TABLE_TYPE, TableType.VIRTUAL_VIEW.name())
                     .build();
         }
 
@@ -1629,6 +1628,19 @@ public class HiveMetadata
     @Override
     public void dropView(ConnectorSession session, SchemaTableName viewName)
     {
+        Optional<Table> view = metastore.getTable(viewName.getSchemaName(), viewName.getTableName());
+        if (!view.isPresent()) {
+            throw new ViewNotFoundException(viewName);
+        }
+        boolean isCommonView = HiveUtil.isCommonView(view.get());
+        if (!isCommonViewSupportEnabled(session) && isCommonView) {
+            throw new PrestoException(NOT_SUPPORTED, "This connector does not support common views.");
+        }
+
+        if (isCommonView) {
+            Configuration configuration = getConfiguration(session, viewName.getSchemaName());
+            commonViewUtils.dropView(configuration, session.getCatalog(), viewName);
+        }
         try {
             metastore.dropTable(session, viewName.getSchemaName(), viewName.getTableName());
         }

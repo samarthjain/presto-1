@@ -57,10 +57,6 @@ public class TestLegacyCommonViews
         assertThat(query(querySql)).containsExactly(
                 row("def", "bbb"));
 
-        querySql = format("" + "select * from prodhive.common_view.common_view_example_spark23");
-        assertThat(query(querySql)).containsExactly(
-                row("def", "bbb"));
-
         querySql = format("" + "select * from prodhive.common_view.legacy_ice_spark_view_211 order by c1");
         assertThat(query(querySql)).containsExactly(
                 row(1, "one"),

@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 public class ConnectorCommonViewDefinition
 {
     private final String originalSql;
-    private final Optional<String> sessionCatalog;
+    private final String sessionCatalog;
     private final List<String> sessionNamespace;
     private final org.apache.iceberg.Schema columns;
     private final Optional<String> owner;
@@ -34,13 +34,13 @@ public class ConnectorCommonViewDefinition
     @JsonCreator
     public ConnectorCommonViewDefinition(
             @JsonProperty("originalSql") String originalSql,
-            @JsonProperty("sessionCatalog") Optional<String> sessionCatalog,
+            @JsonProperty("sessionCatalog") String sessionCatalog,
             @JsonProperty("sessionNamespace") List<String> sessionNamespace,
             @JsonProperty("columns") org.apache.iceberg.Schema columns,
             @JsonProperty("owner") Optional<String> owner)
     {
         this.originalSql = requireNonNull(originalSql, "originalSql is null");
-        this.sessionCatalog = requireNonNull(sessionCatalog, "catalog is null");
+        this.sessionCatalog = sessionCatalog;
         this.sessionNamespace = sessionNamespace;
         this.columns = requireNonNull(columns, "columns are null");
 
@@ -57,7 +57,7 @@ public class ConnectorCommonViewDefinition
     }
 
     @JsonProperty
-    public Optional<String> getCatalog()
+    public String getCatalog()
     {
         return sessionCatalog;
     }

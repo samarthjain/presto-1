@@ -37,7 +37,6 @@ import io.prestosql.spi.connector.TableNotFoundException;
 import io.prestosql.spi.security.RoleGrant;
 import io.prestosql.spi.statistics.ColumnStatisticType;
 import io.prestosql.spi.type.Type;
-import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.AlreadyExistsException;
 import org.apache.hadoop.hive.metastore.api.ColumnStatisticsObj;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -235,13 +234,6 @@ public class ThriftHiveMetastore
     public Set<ColumnStatisticType> getSupportedColumnStatistics(Type type)
     {
         return ThriftMetastoreUtil.getSupportedColumnStatistics(type);
-    }
-
-    private static boolean isPrestoOrCommonView(Table table)
-    {
-        // Instead of checking for PRESTO_VIEW_FLAG and COMMON_VIEW_FLAG, this method checks for a generic
-        // if the table type is a view. This is because Presto needs to continue to support legacy spark views.
-        return table.getTableType().equals(TableType.VIRTUAL_VIEW.name());
     }
 
     @Override

@@ -40,6 +40,7 @@ public class FullConnectorSession
     private final String catalog;
     private final SessionPropertyManager sessionPropertyManager;
     private final boolean isLegacyTimestamp;
+    private final String genieJobId;
 
     public FullConnectorSession(Session session, ConnectorIdentity identity)
     {
@@ -50,6 +51,7 @@ public class FullConnectorSession
         this.catalog = null;
         this.sessionPropertyManager = null;
         this.isLegacyTimestamp = SystemSessionProperties.isLegacyTimestamp(session);
+        this.genieJobId = SystemSessionProperties.getGenieJobId(session);
     }
 
     public FullConnectorSession(
@@ -67,6 +69,7 @@ public class FullConnectorSession
         this.catalog = requireNonNull(catalog, "catalog is null");
         this.sessionPropertyManager = requireNonNull(sessionPropertyManager, "sessionPropertyManager is null");
         this.isLegacyTimestamp = SystemSessionProperties.isLegacyTimestamp(session);
+        this.genieJobId = SystemSessionProperties.getGenieJobId(session);
     }
 
     public Session getSession()
@@ -127,6 +130,9 @@ public class FullConnectorSession
     {
         return isLegacyTimestamp;
     }
+
+    @Override
+    public String getGenieJobId() { return genieJobId; }
 
     @Override
     public <T> T getProperty(String propertyName, Class<T> type)
