@@ -101,7 +101,7 @@ final class DescribeOutputRewrite
             String sqlString = session.getPreparedStatement(node.getName().getValue());
             Statement statement = parser.createStatement(sqlString, createParsingOptions(session));
 
-            Analyzer analyzer = new Analyzer(session, metadata, parser, accessControl, queryExplainer, parameters, warningCollector);
+            Analyzer analyzer = new Analyzer(session, metadata, parser, accessControl, queryExplainer, parameters, warningCollector, null);
             Analysis analysis = analyzer.analyze(statement, true);
 
             Optional<Node> limit = Optional.empty();

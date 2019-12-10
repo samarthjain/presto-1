@@ -81,7 +81,7 @@ public class CreateViewTask
                         .orElseThrow(() -> new IllegalArgumentException("Cannot create common view without original SQL")) :
                 getFormattedSql(statement.getQuery(), sqlParser);
 
-        Analysis analysis = analyzeStatement(statement, session, metadata, accessControl, parameters, stateMachine.getWarningCollector());
+        Analysis analysis = analyzeStatement(statement, session, metadata, accessControl, parameters, stateMachine.getWarningCollector(), stateMachine.getQuery());
 
         List<ViewColumn> columns = analysis.getOutputDescriptor(statement.getQuery())
                 .getVisibleFields().stream()
@@ -114,9 +114,9 @@ public class CreateViewTask
         return enabled.equalsIgnoreCase("true");
     }
 
-    private Analysis analyzeStatement(Statement statement, Session session, Metadata metadata, AccessControl accessControl, List<Expression> parameters, WarningCollector warningCollector)
+    private Analysis analyzeStatement(Statement statement, Session session, Metadata metadata, AccessControl accessControl, List<Expression> parameters, WarningCollector warningCollector, String query)
     {
-        Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.empty(), parameters, warningCollector);
+        Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.empty(), parameters, warningCollector, query);
         return analyzer.analyze(statement);
     }
 }

@@ -104,7 +104,7 @@ final class DescribeInputRewrite
             Statement statement = parser.createStatement(sqlString, createParsingOptions(session));
 
             // create  analysis for the query we are describing.
-            Analyzer analyzer = new Analyzer(session, metadata, parser, accessControl, queryExplainer, parameters, warningCollector);
+            Analyzer analyzer = new Analyzer(session, metadata, parser, accessControl, queryExplainer, parameters, warningCollector, null);
             Analysis analysis = analyzer.analyze(statement, true);
 
             // get all parameters in query

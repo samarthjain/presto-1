@@ -1405,7 +1405,7 @@ public final class MetadataManager
         String originalSql = view.getOriginalSql();
         try {
             SqlParser sqlParser = new SqlParser();
-            Analyzer analyzer = new Analyzer(session, this, sqlParser, new AllowAllAccessControl(), Optional.<QueryExplainer>empty(), new ArrayList(), WarningCollector.NOOP);
+            Analyzer analyzer = new Analyzer(session, this, sqlParser, new AllowAllAccessControl(), Optional.<QueryExplainer>empty(), new ArrayList(), WarningCollector.NOOP, null);
             io.prestosql.sql.tree.Statement statement = null;
             try {
                 statement = sqlParser.createStatement(sql, new ParsingOptions(ParsingOptions.DecimalLiteralTreatment.AS_DECIMAL));

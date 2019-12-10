@@ -883,6 +883,11 @@ public final class SystemSessionProperties
         return session.getSystemProperty(GENIE_JOB_ID, String.class);
     }
 
+    public static String getGenieJobName(Session session)
+    {
+        return session.getSystemProperty(GENIE_JOB_NAME, String.class);
+    }
+
     public static Duration getOptimizerTimeout(Session session)
     {
         return session.getSystemProperty(ITERATIVE_OPTIMIZER_TIMEOUT, Duration.class);

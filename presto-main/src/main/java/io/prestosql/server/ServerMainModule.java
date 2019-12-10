@@ -233,6 +233,9 @@ public class ServerMainModule
                     config.setRequestTimeout(new Duration(10, SECONDS));
                 });
 
+        binder.bind(LineageStats.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(LineageStats.class).withGeneratedName();
+
         // node scheduler
         // TODO: remove from NodePartitioningManager and move to CoordinatorModule
         configBinder(binder).bindConfig(NodeSchedulerConfig.class);

@@ -50,6 +50,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
@@ -126,6 +127,8 @@ public class Analysis
 
     private final Map<NodeRef<QuerySpecification>, List<GroupingOperation>> groupingOperations = new LinkedHashMap<>();
 
+    private final String originalQueryText;
+
     // for create table
     private Optional<QualifiedObjectName> createTableDestination = Optional.empty();
     private Map<String, Expression> createTableProperties = ImmutableMap.of();
@@ -143,18 +146,27 @@ public class Analysis
     // for recursive view detection
     private final Deque<Table> tablesForView = new ArrayDeque<>();
 
-    public Analysis(@Nullable Statement root, List<Expression> parameters, boolean isDescribe)
+    // for view lineage logging
+    private final List<String> viewNames = new ArrayList<>();
+
+    public Analysis(@Nullable Statement root, List<Expression> parameters, boolean isDescribe, String originalQueryText)
     {
         requireNonNull(parameters);
 
         this.root = root;
         this.parameters = ImmutableList.copyOf(requireNonNull(parameters, "parameters is null"));
         this.isDescribe = isDescribe;
+        this.originalQueryText = originalQueryText;
     }
 
     public Statement getStatement()
     {
         return root;
+    }
+
+    public String getOriginalQueryText()
+    {
+        return originalQueryText;
     }
 
     public String getUpdateType()
@@ -618,8 +630,9 @@ public class Analysis
         namedQueries.put(NodeRef.of(tableReference), query);
     }
 
-    public void registerTableForView(Table tableReference)
+    public void registerTableForView(Table tableReference, String fullyQualifiedName)
     {
+        viewNames.add(fullyQualifiedName);
         tablesForView.push(requireNonNull(tableReference, "table is null"));
     }
 
@@ -693,6 +706,11 @@ public class Analysis
     public Map<AccessControlInfo, Map<QualifiedObjectName, Set<String>>> getTableColumnReferences()
     {
         return tableColumnReferences;
+    }
+
+    public List<String> getViews()
+    {
+        return viewNames;
     }
 
     public void markRedundantOrderBy(OrderBy orderBy)

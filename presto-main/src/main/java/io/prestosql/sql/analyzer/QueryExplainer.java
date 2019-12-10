@@ -103,7 +103,7 @@ public class QueryExplainer
 
     public Analysis analyze(Session session, Statement statement, List<Expression> parameters, WarningCollector warningCollector)
     {
-        Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.of(this), parameters, warningCollector);
+        Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.of(this), parameters, warningCollector, null);
         return analyzer.analyze(statement);
     }
 

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.netflix.bdp.Events;
 import io.prestosql.Session;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.execution.warnings.WarningCollector;
@@ -315,7 +316,6 @@ class StatementAnalyzer
             if (!targetTableHandle.isPresent()) {
                 throw semanticException(TABLE_NOT_FOUND, insert, "Table '%s' does not exist", targetTable);
             }
-            accessControl.checkCanInsertIntoTable(session.getRequiredTransactionId(), session.getIdentity(), targetTable);
 
             TableMetadata tableMetadata = metadata.getTableMetadata(session, targetTableHandle.get());
             List<String> tableColumns = tableMetadata.getColumns().stream()
@@ -344,6 +344,12 @@ class StatementAnalyzer
                 insertColumns = tableColumns;
             }
 
+            accessControl.checkCanInsertIntoTable(session.getRequiredTransactionId(), session.getIdentity(), targetTable);
+            Map<String, String> props = LineageLoggingUtils.getSessionProperties(session);
+            props.put("query", analysis.getOriginalQueryText());
+
+            // Use 'sendAppend' event since Presto only performs 'insert' with 'append', no overwrite.
+            Events.sendAppend(LineageLoggingUtils.objectNameToString(session, targetTable), insertColumns, props);
             Map<String, ColumnHandle> columnHandles = metadata.getColumnHandles(session, targetTableHandle.get());
             analysis.setInsert(new Analysis.Insert(
                     targetTableHandle.get(),
@@ -406,6 +412,10 @@ class StatementAnalyzer
             analysis.setUpdateType("DELETE");
 
             accessControl.checkCanDeleteFromTable(session.getRequiredTransactionId(), session.getIdentity(), tableName);
+            Map<String, String> props = LineageLoggingUtils.getSessionProperties(session);
+            props.put("query", analysis.getOriginalQueryText());
+
+            Events.sendDelete(LineageLoggingUtils.objectNameToString(session, tableName), node.getWhere().toString(), props);
 
             return createAndAssignScope(node, scope, Field.newUnqualified("rows", BIGINT));
         }
@@ -436,14 +446,20 @@ class StatementAnalyzer
                     .orElseThrow(() -> semanticException(TABLE_NOT_FOUND, node, "Table '%s' does not exist", tableName));
 
             // user must have read and insert permission in order to analyze stats of a table
+            Set<String> columnNames = metadata.getColumnHandles(session, tableHandle).keySet();
             analysis.addTableColumnReferences(
                     accessControl,
                     session.getIdentity(),
                     ImmutableMultimap.<QualifiedObjectName, String>builder()
-                            .putAll(tableName, metadata.getColumnHandles(session, tableHandle).keySet())
+                            .putAll(tableName, columnNames)
                             .build());
             try {
                 accessControl.checkCanInsertIntoTable(session.getRequiredTransactionId(), session.getIdentity(), tableName);
+                Map<String, String> props = LineageLoggingUtils.getSessionProperties(session);
+                props.put("query", analysis.getOriginalQueryText());
+
+                // Use 'sendAppend' event since Presto only performs 'insert' with 'append', no overwrite.
+                Events.sendAppend(LineageLoggingUtils.objectNameToString(session, tableName), new ArrayList<>(columnNames), props);
             }
             catch (AccessDeniedException exception) {
                 throw new AccessDeniedException(format("Cannot ANALYZE (missing insert privilege) table %s", tableName));
@@ -477,9 +493,26 @@ class StatementAnalyzer
             node.getColumnAliases().ifPresent(analysis::setCreateTableColumnAliases);
             analysis.setCreateTableComment(node.getComment());
 
-            accessControl.checkCanCreateTable(session.getRequiredTransactionId(), session.getIdentity(), targetTable);
+            // Convert the columnNames to the form needed by lineage logging
+            Set<String> columnNames = new HashSet<>();
+            if (analysis.getColumnAliases().isPresent()) {
+                for (Identifier id : analysis.getColumnAliases().get()) {
+                    columnNames.add(id.toString());
+                }
+            }
 
+            accessControl.checkCanCreateTable(session.getRequiredTransactionId(), session.getIdentity(), targetTable);
             analysis.setCreateTableAsSelectWithData(node.isWithData());
+
+            // Only log CTAS events where 'with data' option is specified or inferred.
+            if (node.isWithData()) {
+                Map<String, String> props = LineageLoggingUtils.getSessionProperties(session);
+                for (Map.Entry<String, Expression> entry : analysis.getCreateTableProperties().entrySet()) {
+                    props.put(entry.getKey(), entry.getValue().toString());
+                    props.put("query", analysis.getOriginalQueryText());
+                }
+                Events.sendCTAS(LineageLoggingUtils.objectNameToString(session, targetTable), new ArrayList<>(columnNames), props);
+            }
 
             // analyze the query that creates the table
             Scope queryScope = process(node.getQuery(), scope);
@@ -925,7 +958,7 @@ class StatementAnalyzer
 
             Query query = parseView(view.getOriginalSql(), name, table);
             analysis.registerNamedQuery(table, query);
-            analysis.registerTableForView(table);
+            analysis.registerTableForView(table, name.toString());
             RelationType descriptor = analyzeView(query, name, view.getCatalog(), view.getSchema(), view.getOwner(), table);
             analysis.unregisterTableForView();
 

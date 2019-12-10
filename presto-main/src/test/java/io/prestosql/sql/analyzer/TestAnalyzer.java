@@ -1972,7 +1972,8 @@ public class TestAnalyzer
                 new AllowAllAccessControl(),
                 Optional.empty(),
                 emptyList(),
-                WarningCollector.NOOP);
+                WarningCollector.NOOP,
+                null);
     }
 
     private void analyze(@Language("SQL") String query)

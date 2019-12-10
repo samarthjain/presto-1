@@ -69,6 +69,9 @@ public class QueryManagerConfig
     private Duration requiredWorkersMaxWait = new Duration(5, TimeUnit.MINUTES);
     private boolean queueQueriesWithInsufficientWorkers;
 
+    private String lineageLoggingHost;
+    private int lineageLoggingPort;
+
     @Min(1)
     public int getScheduleSplitBatchSize()
     {
@@ -377,6 +380,31 @@ public class QueryManagerConfig
     public QueryManagerConfig setQueryMaxDataSize(DataSize maxQueryDataSize)
     {
         this.maxQueryDataSize = maxQueryDataSize;
+        return this;
+    }
+
+    public String getLineageLoggingHost()
+    {
+        return lineageLoggingHost;
+    }
+
+    @Config("lineage-logging.host")
+    public QueryManagerConfig setLineageLoggingHost(String host)
+    {
+        this.lineageLoggingHost = host;
+        return this;
+    }
+
+    @NotNull
+    public int getLineageLoggingPort()
+    {
+        return lineageLoggingPort;
+    }
+
+    @Config("lineage-logging.port")
+    public QueryManagerConfig setLineageLoggingPort(int port)
+    {
+        this.lineageLoggingPort = port;
         return this;
     }
 }

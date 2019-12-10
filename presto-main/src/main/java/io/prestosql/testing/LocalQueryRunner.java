@@ -841,7 +841,7 @@ public class LocalQueryRunner
                 statsCalculator,
                 costCalculator,
                 dataDefinitionTask);
-        Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.of(queryExplainer), preparedQuery.getParameters(), warningCollector);
+        Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.of(queryExplainer), preparedQuery.getParameters(), warningCollector, null);
 
         LogicalPlanner logicalPlanner = new LogicalPlanner(session, optimizers, new PlanSanityChecker(true), idAllocator, metadata, new TypeAnalyzer(sqlParser, metadata), statsCalculator, costCalculator, warningCollector);
 

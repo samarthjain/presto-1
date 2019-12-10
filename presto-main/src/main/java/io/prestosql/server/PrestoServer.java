@@ -17,6 +17,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.netflix.bdp.KSGatewayListener;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryModule;
@@ -32,8 +33,10 @@ import io.airlift.log.LogJmxModule;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeModule;
 import io.airlift.tracetoken.TraceTokenModule;
+import io.airlift.units.Duration;
 import io.prestosql.eventlistener.EventListenerManager;
 import io.prestosql.eventlistener.EventListenerModule;
+import io.prestosql.execution.QueryManagerConfig;
 import io.prestosql.execution.resourcegroups.ResourceGroupManager;
 import io.prestosql.execution.scheduler.NodeSchedulerConfig;
 import io.prestosql.execution.warnings.WarningCollectorModule;
@@ -54,6 +57,7 @@ import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
@@ -61,10 +65,16 @@ import static io.prestosql.server.PrestoSystemRequirements.verifyJvmRequirements
 import static io.prestosql.server.PrestoSystemRequirements.verifySystemTimeIsReasonable;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class PrestoServer
         implements Runnable
 {
+    private static final int DEFAULT_RETRY_ATTEMPTS = 5;
+    private static final Duration DEFAULT_SLEEP_TIME = Duration.valueOf("1s");
+    private static final Duration DEFAULT_MAX_RETRY_TIME = Duration.valueOf("10s");
+    private static final double DEFAULT_SCALE_FACTOR = 2.0;
+
     public static void main(String[] args)
     {
         new PrestoServer().run();
@@ -140,14 +150,53 @@ public class PrestoServer
             injector.getInstance(EventListenerManager.class).loadConfiguredEventListener();
 
             injector.getInstance(Announcer.class).start();
-
-            injector.getInstance(ServerInfoResource.class).startupComplete();
+            ServerInfoResource serverInfoResource = injector.getInstance(ServerInfoResource.class);
+            serverInfoResource.startupComplete();
 
             log.info("======== SERVER STARTED ========");
+
+            QueryManagerConfig queryManagerConfig = injector.getInstance(QueryManagerConfig.class);
+
+            // Register the Presto server with keystone service to provide lineage service.
+            // Even if registration fails, Presto server continues to work correctly.
+            LineageStats lineageStats = injector.getInstance(LineageStats.class);
+            registerWithLineageService(lineageStats, serverInfoResource, queryManagerConfig);
         }
         catch (Throwable e) {
             log.error(e);
             System.exit(1);
+        }
+    }
+
+    public void registerWithLineageService(LineageStats lineageStats, ServerInfoResource serverInfoResource, QueryManagerConfig queryManagerConfig)
+    {
+        long startTime = System.nanoTime();
+        int attempt = 0;
+        while (true) {
+            attempt++;
+
+            try {
+                KSGatewayListener.initialize("presto", "presto", serverInfoResource.getInfo().getNodeVersion().getVersion(),
+                            queryManagerConfig.getLineageLoggingHost(), queryManagerConfig.getLineageLoggingPort());
+                lineageStats.newLineageRetry(0);
+                return;
+            }
+            catch (Exception e) {
+                if (attempt >= DEFAULT_RETRY_ATTEMPTS || Duration.nanosSince(startTime).compareTo(DEFAULT_MAX_RETRY_TIME) >= 0) {
+                    lineageStats.newLineageRetry(attempt);
+                    return;
+                }
+
+                int delayInMs = (int) Math.min(DEFAULT_SLEEP_TIME.toMillis() * Math.pow(DEFAULT_SCALE_FACTOR, attempt - 1), DEFAULT_SLEEP_TIME.toMillis());
+                int jitter = ThreadLocalRandom.current().nextInt(Math.max(1, (int) (delayInMs * 0.1)));
+                try {
+                    MILLISECONDS.sleep(delayInMs + jitter);
+                }
+                catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(ie);
+                }
+            }
         }
     }
 
