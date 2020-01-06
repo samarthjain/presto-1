@@ -33,7 +33,9 @@ import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.prestosql.execution.buffer.SerializedPage;
 import io.prestosql.server.remotetask.Backoff;
+import io.prestosql.spi.HostAddress;
 import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.PrestoTransportException;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -323,7 +325,7 @@ public final class HttpPageBufferClient
 
                         if (!isNullOrEmpty(taskInstanceId) && !result.getTaskInstanceId().equals(taskInstanceId)) {
                             // TODO: update error message
-                            throw new PrestoException(REMOTE_TASK_MISMATCH, format("%s (%s)", REMOTE_TASK_MISMATCH_ERROR, fromUri(uri)));
+                            throw new PrestoTransportException(REMOTE_TASK_MISMATCH, HostAddress.fromUri(uri), format("%s (%s)", REMOTE_TASK_MISMATCH_ERROR, fromUri(uri)));
                         }
 
                         if (result.getToken() == token) {

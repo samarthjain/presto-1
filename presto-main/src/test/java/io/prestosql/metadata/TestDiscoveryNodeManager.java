@@ -26,6 +26,7 @@ import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import io.prestosql.client.NodeVersion;
+import io.prestosql.execution.scheduler.NodeSchedulerConfig;
 import io.prestosql.failuredetector.NoOpFailureDetector;
 import io.prestosql.server.InternalCommunicationConfig;
 import org.testng.annotations.BeforeMethod;
@@ -47,13 +48,16 @@ import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static io.prestosql.metadata.NodeState.ACTIVE;
 import static io.prestosql.metadata.NodeState.INACTIVE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.assertTrue;
 
 @Test(singleThreaded = true)
 public class TestDiscoveryNodeManager
 {
     private final NodeInfo nodeInfo = new NodeInfo("test");
     private final InternalCommunicationConfig internalCommunicationConfig = new InternalCommunicationConfig();
+    private final NodeSchedulerConfig nodeSchedulerConfig = new NodeSchedulerConfig();
     private NodeVersion expectedVersion;
     private Set<InternalNode> activeNodes;
     private Set<InternalNode> inactiveNodes;
@@ -86,7 +90,7 @@ public class TestDiscoveryNodeManager
     @Test
     public void testGetAllNodes()
     {
-        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig);
+        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig, nodeSchedulerConfig);
         try {
             AllNodes allNodes = manager.getAllNodes();
 
@@ -124,7 +128,7 @@ public class TestDiscoveryNodeManager
                 .setEnvironment("test")
                 .setNodeId(currentNode.getNodeIdentifier()));
 
-        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig);
+        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig, nodeSchedulerConfig);
         try {
             assertEquals(manager.getCurrentNode(), currentNode);
         }
@@ -136,7 +140,7 @@ public class TestDiscoveryNodeManager
     @Test
     public void testGetCoordinators()
     {
-        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig);
+        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig, nodeSchedulerConfig);
         try {
             assertEquals(manager.getCoordinators(), ImmutableSet.of(coordinator));
         }
@@ -149,14 +153,14 @@ public class TestDiscoveryNodeManager
     @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = ".* current node not returned .*")
     public void testGetCurrentNodeRequired()
     {
-        new DiscoveryNodeManager(selector, new NodeInfo("test"), new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig);
+        new DiscoveryNodeManager(selector, new NodeInfo("test"), new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig, nodeSchedulerConfig);
     }
 
     @Test(timeOut = 60000)
     public void testNodeChangeListener()
             throws Exception
     {
-        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig);
+        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig, nodeSchedulerConfig);
         try {
             manager.startPollingNodeStates();
 
@@ -175,6 +179,37 @@ public class TestDiscoveryNodeManager
             allNodes = notifications.take();
             assertEquals(allNodes.getActiveNodes(), activeNodes);
             assertEquals(allNodes.getInactiveNodes(), inactiveNodes);
+        }
+        finally {
+            manager.stop();
+        }
+    }
+
+    @Test
+    public void testBlackListedNode()
+            throws InterruptedException
+    {
+        NodeSchedulerConfig nodeSchedulerConfig = new NodeSchedulerConfig();
+        long blacklistNodeTimeoutMillis = 1000L;
+        nodeSchedulerConfig.setBlacklistNodeTimeoutMillis(blacklistNodeTimeoutMillis);
+
+        DiscoveryNodeManager manager = new DiscoveryNodeManager(selector, nodeInfo, new NoOpFailureDetector(), expectedVersion, testHttpClient, internalCommunicationConfig, nodeSchedulerConfig);
+        try {
+            AllNodes allNodes = manager.getAllNodes();
+
+            Set<InternalNode> activeNodes = allNodes.getActiveNodes();
+            int activeNodeSize = activeNodes.size();
+            assertTrue(activeNodes.stream().anyMatch(node -> node.getHostAndPort().equals(currentNode.getHostAndPort())));
+
+            manager.blackListNode(this.currentNode.getHostAndPort());
+            activeNodes = allNodes.getActiveNodes();
+            assertFalse(activeNodes.stream().anyMatch(node -> node.getHostAndPort().equals(currentNode.getHostAndPort())));
+            assertTrue(activeNodes.size() == activeNodeSize - 1);
+
+            // blacklisted node should be removed from the black list cache after the timeout.
+            Thread.sleep(blacklistNodeTimeoutMillis + 100);
+            activeNodes = allNodes.getActiveNodes();
+            assertTrue(activeNodes.stream().anyMatch(node -> node.getHostAndPort().equals(currentNode.getHostAndPort())));
         }
         finally {
             manager.stop();

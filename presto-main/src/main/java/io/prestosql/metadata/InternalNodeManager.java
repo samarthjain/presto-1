@@ -14,6 +14,7 @@
 package io.prestosql.metadata;
 
 import io.prestosql.connector.CatalogName;
+import io.prestosql.spi.HostAddress;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -35,4 +36,6 @@ public interface InternalNodeManager
     void addNodeChangeListener(Consumer<AllNodes> listener);
 
     void removeNodeChangeListener(Consumer<AllNodes> listener);
+
+    void blackListNode(HostAddress node);
 }

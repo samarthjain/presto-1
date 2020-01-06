@@ -20,12 +20,14 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import io.prestosql.client.NodeVersion;
 import io.prestosql.connector.CatalogName;
+import io.prestosql.spi.HostAddress;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -37,6 +39,7 @@ public class InMemoryNodeManager
 {
     private final InternalNode localNode;
     private final SetMultimap<CatalogName, InternalNode> remoteNodes = Multimaps.synchronizedSetMultimap(HashMultimap.create());
+    private final Set<HostAddress> blacklistedNodes = new HashSet<>();
 
     @GuardedBy("this")
     private final List<Consumer<AllNodes>> listeners = new ArrayList<>();
@@ -98,7 +101,9 @@ public class InMemoryNodeManager
     @Override
     public AllNodes getAllNodes()
     {
-        return new AllNodes(ImmutableSet.<InternalNode>builder().add(localNode).addAll(remoteNodes.values()).build(), ImmutableSet.of(), ImmutableSet.of(), ImmutableSet.of(localNode));
+        AllNodes allNodes = new AllNodes(ImmutableSet.<InternalNode>builder().add(localNode).addAll(remoteNodes.values()).build(), ImmutableSet.of(), ImmutableSet.of(), ImmutableSet.of(localNode), 1000L);
+        blacklistedNodes.stream().forEach(node -> allNodes.addBlackListedNode(node));
+        return allNodes;
     }
 
     @Override
@@ -130,5 +135,11 @@ public class InMemoryNodeManager
     public synchronized void removeNodeChangeListener(Consumer<AllNodes> listener)
     {
         listeners.remove(requireNonNull(listener, "listener is null"));
+    }
+
+    @Override
+    public void blackListNode(HostAddress node)
+    {
+        blacklistedNodes.add(node);
     }
 }

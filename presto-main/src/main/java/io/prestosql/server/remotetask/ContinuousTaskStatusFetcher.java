@@ -26,7 +26,7 @@ import io.prestosql.execution.StateMachine;
 import io.prestosql.execution.TaskId;
 import io.prestosql.execution.TaskStatus;
 import io.prestosql.spi.HostAddress;
-import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.PrestoTransportException;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -235,7 +235,7 @@ class ContinuousTaskStatusFetcher
             // This will also set the task status to FAILED state directly.
             // Additionally, this will issue a DELETE for the task to the worker.
             // While sending the DELETE is not required, it is preferred because a task was created by the previous request.
-            onFail.accept(new PrestoException(REMOTE_TASK_MISMATCH, format("%s (%s)", REMOTE_TASK_MISMATCH_ERROR, HostAddress.fromUri(getTaskStatus().getSelf()))));
+            onFail.accept(new PrestoTransportException(REMOTE_TASK_MISMATCH, HostAddress.fromUri(getTaskStatus().getSelf()), format("%s (%s)", REMOTE_TASK_MISMATCH_ERROR, HostAddress.fromUri(getTaskStatus().getSelf()))));
         }
     }
 

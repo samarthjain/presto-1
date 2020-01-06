@@ -78,6 +78,7 @@ public class NodeScheduler
     private final boolean optimizedLocalScheduling;
     private final NodeTaskMap nodeTaskMap;
     private final boolean useNetworkTopology;
+    private final Long blackListedNodeTimeoutMillis;
 
     @Inject
     public NodeScheduler(NetworkTopology networkTopology, InternalNodeManager nodeManager, NodeSchedulerConfig config, NodeTaskMap nodeTaskMap)
@@ -99,6 +100,7 @@ public class NodeScheduler
         this.maxSplitsPerNode = config.getMaxSplitsPerNode();
         this.maxPendingSplitsPerTask = config.getMaxPendingSplitsPerTask();
         this.optimizedLocalScheduling = config.getOptimizedLocalScheduling();
+        this.blackListedNodeTimeoutMillis = config.getBlacklistNodeTimeoutMillis();
         this.nodeTaskMap = requireNonNull(nodeTaskMap, "nodeTaskMap is null");
         checkArgument(maxSplitsPerNode >= maxPendingSplitsPerTask, "maxSplitsPerNode must be > maxPendingSplitsPerTask");
         this.useNetworkTopology = !config.getNetworkTopology().equals(NetworkTopologyType.LEGACY);
@@ -192,6 +194,12 @@ public class NodeScheduler
         else {
             return new SimpleNodeSelector(nodeManager, nodeTaskMap, includeCoordinator, nodeMap, minCandidates, maxSplitsPerNode, maxPendingSplitsPerTask, optimizedLocalScheduling);
         }
+    }
+
+    public void blackListNode(HostAddress node)
+    {
+        LOG.warn("Adding node %s to blacklist so it won't be used for scheduling for %d millis", node, blackListedNodeTimeoutMillis);
+        nodeManager.blackListNode(node);
     }
 
     public static List<InternalNode> selectNodes(int limit, Iterator<InternalNode> candidates)

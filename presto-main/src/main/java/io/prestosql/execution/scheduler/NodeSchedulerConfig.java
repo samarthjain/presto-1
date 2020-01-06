@@ -36,6 +36,7 @@ public class NodeSchedulerConfig
     private int maxPendingSplitsPerTask = 10;
     private String networkTopology = NetworkTopologyType.LEGACY;
     private boolean optimizedLocalScheduling = true;
+    private long blacklistNodeTimeoutMillis = 30000;
 
     @NotNull
     public String getNetworkTopology()
@@ -61,6 +62,17 @@ public class NodeSchedulerConfig
     {
         this.minCandidates = candidates;
         return this;
+    }
+
+    public long getBlacklistNodeTimeoutMillis()
+    {
+        return blacklistNodeTimeoutMillis;
+    }
+
+    @Config("node-scheduler.blacklisted-node-timeout-mills")
+    public void setBlacklistNodeTimeoutMillis(long blacklistNodeTimeoutMillis)
+    {
+        this.blacklistNodeTimeoutMillis = blacklistNodeTimeoutMillis;
     }
 
     public boolean isIncludeCoordinator()

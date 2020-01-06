@@ -40,7 +40,9 @@ import io.prestosql.metadata.TableHandle;
 import io.prestosql.operator.ForScheduler;
 import io.prestosql.security.AccessControl;
 import io.prestosql.server.BasicQueryInfo;
+import io.prestosql.spi.HostAddress;
 import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.PrestoTransportException;
 import io.prestosql.spi.QueryId;
 import io.prestosql.split.SplitManager;
 import io.prestosql.split.SplitSource;
@@ -515,6 +517,10 @@ public class SqlQueryExecution
         requireNonNull(cause, "cause is null");
 
         stateMachine.transitionToFailed(cause);
+        if (cause instanceof PrestoTransportException) {
+            HostAddress host = ((PrestoTransportException) cause).getRemoteHost();
+            nodeScheduler.blackListNode(host);
+        }
     }
 
     @Override

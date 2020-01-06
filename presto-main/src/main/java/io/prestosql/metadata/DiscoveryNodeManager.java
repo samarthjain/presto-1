@@ -29,8 +29,10 @@ import io.airlift.node.NodeInfo;
 import io.prestosql.client.NodeVersion;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.connector.system.GlobalSystemConnector;
+import io.prestosql.execution.scheduler.NodeSchedulerConfig;
 import io.prestosql.failuredetector.FailureDetector;
 import io.prestosql.server.InternalCommunicationConfig;
+import io.prestosql.spi.HostAddress;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
@@ -80,6 +82,7 @@ public final class DiscoveryNodeManager
     private final ExecutorService nodeStateEventExecutor;
     private final boolean httpsRequired;
     private final InternalNode currentNode;
+    private final long blackListedNodeTimeoutMillis;
 
     @GuardedBy("this")
     private SetMultimap<CatalogName, InternalNode> activeNodesByCatalogName;
@@ -100,7 +103,8 @@ public final class DiscoveryNodeManager
             FailureDetector failureDetector,
             NodeVersion expectedNodeVersion,
             @ForNodeManager HttpClient httpClient,
-            InternalCommunicationConfig internalCommunicationConfig)
+            InternalCommunicationConfig internalCommunicationConfig,
+            NodeSchedulerConfig nodeSchedulerConfig)
     {
         this.serviceSelector = requireNonNull(serviceSelector, "serviceSelector is null");
         this.failureDetector = requireNonNull(failureDetector, "failureDetector is null");
@@ -109,7 +113,7 @@ public final class DiscoveryNodeManager
         this.nodeStateUpdateExecutor = newSingleThreadScheduledExecutor(threadsNamed("node-state-poller-%s"));
         this.nodeStateEventExecutor = newCachedThreadPool(threadsNamed("node-state-events-%s"));
         this.httpsRequired = internalCommunicationConfig.isHttpsRequired();
-
+        this.blackListedNodeTimeoutMillis = nodeSchedulerConfig.getBlacklistNodeTimeoutMillis();
         this.currentNode = findCurrentNode(
                 serviceSelector.selectAllServices(),
                 requireNonNull(nodeInfo, "nodeInfo is null").getNodeId(),
@@ -260,7 +264,7 @@ public final class DiscoveryNodeManager
         // nodes by connector id changes anytime a node adds or removes a connector (note: this is not part of the listener system)
         activeNodesByCatalogName = byConnectorIdBuilder.build();
 
-        AllNodes allNodes = new AllNodes(activeNodesBuilder.build(), inactiveNodesBuilder.build(), shuttingDownNodesBuilder.build(), coordinatorsBuilder.build());
+        AllNodes allNodes = new AllNodes(activeNodesBuilder.build(), inactiveNodesBuilder.build(), shuttingDownNodesBuilder.build(), coordinatorsBuilder.build(), this.blackListedNodeTimeoutMillis);
         // only update if all nodes actually changed (note: this does not include the connectors registered with the nodes)
         if (!allNodes.equals(this.allNodes)) {
             // assign allNodes to a local variable for use in the callback below
@@ -338,7 +342,7 @@ public final class DiscoveryNodeManager
     @Override
     public synchronized Set<InternalNode> getActiveConnectorNodes(CatalogName catalogName)
     {
-        return activeNodesByCatalogName.get(catalogName);
+        return allNodes.filterBlackListed(activeNodesByCatalogName.get(catalogName));
     }
 
     @Override
@@ -365,6 +369,12 @@ public final class DiscoveryNodeManager
     public synchronized void removeNodeChangeListener(Consumer<AllNodes> listener)
     {
         listeners.remove(requireNonNull(listener, "listener is null"));
+    }
+
+    @Override
+    public void blackListNode(HostAddress node)
+    {
+        allNodes.addBlackListedNode(node);
     }
 
     private static URI getHttpUri(ServiceDescriptor descriptor, boolean httpsRequired)
