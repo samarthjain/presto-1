@@ -32,9 +32,15 @@ public interface ConnectorSession
 
     ConnectorIdentity getIdentity();
 
-    default String getCatalog() { return ""; }
+    default String getCatalog()
+    {
+        return "";
+    }
 
-    default String getGenieJobId() { return ""; }
+    default String getGenieJobId()
+    {
+        return "";
+    }
 
     TimeZoneKey getTimeZoneKey();
 

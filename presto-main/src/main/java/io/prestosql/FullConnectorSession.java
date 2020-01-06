@@ -132,7 +132,10 @@ public class FullConnectorSession
     }
 
     @Override
-    public String getGenieJobId() { return genieJobId; }
+    public String getGenieJobId()
+    {
+        return genieJobId;
+    }
 
     @Override
     public <T> T getProperty(String propertyName, Class<T> type)

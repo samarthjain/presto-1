@@ -145,7 +145,8 @@ public class CommonViewUtils
         return Optional.of(definition);
     }
 
-    public void dropView(Configuration configuration, String catalogName, SchemaTableName name) {
+    public void dropView(Configuration configuration, String catalogName, SchemaTableName name)
+    {
         MetacatViewCatalog catalog = getViewCatalog(configuration);
         catalog.drop(catalogName + "." + name.toString());
     }
