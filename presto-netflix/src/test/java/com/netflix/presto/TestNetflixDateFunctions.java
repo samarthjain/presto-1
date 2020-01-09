@@ -105,6 +105,9 @@ public class TestNetflixDateFunctions
         assertFunction("nf_dateint(20181531)", IntegerType.INTEGER, null);
         assertFunction("nf_dateint(timestamp '2018-05-31 02:41:06.000 Asia/Tokyo')", IntegerType.INTEGER, DATEINT);
         assertFunction("nf_dateint_today()", IntegerType.INTEGER, (int) toDateInt(epochLocalDateInZone(TIME_ZONE_KEY, session.getStartTime())));
+        if (TimeZoneKey.isUtcZoneId(session.getTimeZoneKey().getId())) {
+            assertFunction("nf_dateint('2019-12-05T18:04:27.603-08:00')", IntegerType.INTEGER, 20191206);
+        }
     }
 
     @Test

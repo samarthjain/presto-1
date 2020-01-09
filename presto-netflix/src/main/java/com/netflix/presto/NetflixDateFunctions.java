@@ -33,7 +33,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -87,11 +86,11 @@ public final class NetflixDateFunctions
     private static final Slice DATE_INT_FORMAT = utf8Slice("yyyyMMdd");
     private static final long DATE_INT_MAX_THRESHOLD = 100000000L;
     private static final long DATE_INT_MIN_THRESHOLD = 10000000L;
-    private static ConcurrentHashMap computedTimeZones = new ConcurrentHashMap<String, TimeZone>();
 
     private static TimeZone getTimeZone(String timeZoneId)
     {
-        return (TimeZone) computedTimeZones.computeIfAbsent(timeZoneId, timezoneId -> TimeZone.getTimeZone(timeZoneId));
+        ZoneId zoneId = ZoneId.of(timeZoneId, ZoneId.SHORT_IDS);
+        return TimeZone.getTimeZone(zoneId);
     }
 
     private NetflixDateFunctions()
@@ -304,7 +303,7 @@ public final class NetflixDateFunctions
             c = Calendar.getInstance(timeZone);
         }
         else {
-            c = Calendar.getInstance(getTimeZone(String.format("GMT%s%02d:%02d", timeZone, segments[7], segments[8])));
+            c = Calendar.getInstance(getTimeZone(String.format("GMT%s%02d:%02d", (char) tz.byteValue(), segments[7], segments[8])));
         }
 
         c.set(Calendar.MILLISECOND, 0);
