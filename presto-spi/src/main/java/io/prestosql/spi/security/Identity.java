@@ -83,7 +83,23 @@ public class Identity
     public ConnectorIdentity toConnectorIdentity(String catalog)
     {
         requireNonNull(catalog, "catalog is null");
-        return new ConnectorIdentity(user, principal, Optional.ofNullable(roles.get(catalog)), extraCredentials, sessionPropertiesByCatalog.get(catalog));
+
+        // The father all of hecks. Users no longer want to specify the same role configs for each catalogs i.e. hive,iceberg,testhive
+        // and so on, so we just union all catalogs aws_iam_role session properties and pass that down.
+        Map<String, String> mergedSessionProperties = new HashMap<>();
+        for (Map.Entry<String, Map<String, String>> entry : this.sessionPropertiesByCatalog.entrySet()) {
+            for (Map.Entry<String, String> keyVal : entry.getValue().entrySet()) {
+                if (keyVal.getKey().startsWith("aws_iam_role")) {
+                    mergedSessionProperties.put(keyVal.getKey(), keyVal.getValue());
+                }
+            }
+        }
+
+        if (this.sessionPropertiesByCatalog.get(catalog) != null) {
+            mergedSessionProperties.putAll(this.sessionPropertiesByCatalog.get(catalog));
+        }
+
+        return new ConnectorIdentity(user, principal, Optional.ofNullable(roles.get(catalog)), extraCredentials, mergedSessionProperties);
     }
 
     public void setSessionPropertiesByCatalog(Map<String, Map<String, String>> sessionPropertiesByCatalog)
