@@ -175,11 +175,19 @@ public class IcebergMetadata
     @Override
     public IcebergTableHandle getTableHandle(ConnectorSession session, SchemaTableName tableName)
     {
-        IcebergTableHandle handle = IcebergTableHandle.from(tableName);
-        Optional<Table> table = metastore.getTable(handle.getSchemaName(), handle.getTableName());
-        if (!table.isPresent()) {
-            return null;
+        Optional<Table> table = metastore.getTable(tableName.getSchemaName(), tableName.getTableName());
+        IcebergTableHandle handle;
+        if (table.isPresent()) {
+            handle = IcebergTableHandle.from(tableName.getSchemaName(), tableName.getTableName());
         }
+        else {
+            handle = IcebergTableHandle.from(tableName);
+            table = metastore.getTable(handle.getSchemaName(), handle.getTableName());
+            if (!table.isPresent()) {
+                return null;
+            }
+        }
+
         if (!isIcebergTable(table.get()) && !isPrestoOrCommonView(table.get())) {
             throw new UnknownTableTypeException(tableName);
         }

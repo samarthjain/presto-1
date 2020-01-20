@@ -179,9 +179,15 @@ public final class MetadataUtil
                         .build();
                 try {
                     final String metacatCatalogName = metacatCatalogMapping.get(catalogName);
-                    String tableName = parseTableIdentifier(objectName);
+                    TableDto table = null;
+                    try {
+                        table = client.getApi().getTable(metacatCatalogName, schemaName, objectName, true, true, false);
+                    }
+                    catch (MetacatNotFoundException e) {
+                        String tableName = parseTableIdentifier(objectName);
+                        table = client.getApi().getTable(metacatCatalogName, schemaName, tableName, true, true, false);
+                    }
 
-                    final TableDto table = client.getApi().getTable(metacatCatalogName, schemaName, tableName, true, true, false);
                     final Map<String, String> metadata = table.getMetadata();
                     if (metadata.containsKey("table_type") && metadata.get("table_type").equalsIgnoreCase("iceberg")) {
                         if (hiveToIcebergCatalogMapping.containsKey(catalogName)) {

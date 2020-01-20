@@ -144,4 +144,9 @@ public class IcebergTableHandle
 
         return new IcebergTableHandle(name.getSchemaName(), name.getTableName(), DATA, Optional.empty(), TupleDomain.all());
     }
+
+    public static IcebergTableHandle from(String schemaName, String tableName)
+    {
+        return new IcebergTableHandle(schemaName, tableName, DATA, Optional.empty(), TupleDomain.all());
+    }
 }
