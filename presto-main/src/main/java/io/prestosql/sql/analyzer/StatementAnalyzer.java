@@ -929,9 +929,7 @@ class StatementAnalyzer
             RelationType descriptor = analyzeView(query, name, view.getCatalog(), view.getSchema(), view.getOwner(), table);
             analysis.unregisterTableForView();
 
-            if (isViewStale(view.getColumns(), descriptor.getVisibleFields(), name, table)) {
-                throw semanticException(VIEW_IS_STALE, table, "View '%s' is stale; it must be re-created", name);
-            }
+            isViewStale(view.getColumns(), descriptor.getVisibleFields(), name, table);
 
             // Derive the type of the view from the stored definition, not from the analysis of the underlying query.
             // This is needed in case the underlying table(s) changed and the query in the view now produces types that
@@ -2008,10 +2006,11 @@ class StatementAnalyzer
             }
         }
 
-        private boolean isViewStale(List<ViewColumn> columns, Collection<Field> fields, QualifiedObjectName name, Node node)
+        private void isViewStale(List<ViewColumn> columns, Collection<Field> fields, QualifiedObjectName name, Node node)
         {
             if (columns.size() != fields.size()) {
-                return true;
+                throw semanticException(VIEW_IS_STALE, node, "View '%s' is stale; it must be re-created. Number of columns in connector view definition" +
+                        "%d does not match number of columns in view definition %d", name, columns.size(), fields.size());
             }
 
             List<Field> fieldList = ImmutableList.copyOf(fields);
@@ -2019,13 +2018,18 @@ class StatementAnalyzer
                 ViewColumn column = columns.get(i);
                 Type type = getViewColumnType(column, name, node);
                 Field field = fieldList.get(i);
-                if (!column.getName().equalsIgnoreCase(field.getName().orElse(null)) ||
-                        !typeCoercion.canCoerce(field.getType(), type)) {
-                    return true;
+                if (!column.getName().equalsIgnoreCase(field.getName().orElse(null))) {
+                    throw semanticException(VIEW_IS_STALE, node, "View '%s' is stale; it must be re-created. Column '%s' in connector view definition" +
+                            " does not match column '%s' in view definition", name, column.getName(), field.getName());
+                }
+                if (!typeCoercion.canCoerce(field.getType(), type)) {
+                    throw semanticException(VIEW_IS_STALE, node, "View '%s' is stale; it must be re-created. Column '%s' in connector view definition" +
+                            " with type '%s' does not match column '%s' in view definition with type '%s'", name, column.getName(), type, field.getName(),
+                            field.getType());
                 }
             }
 
-            return false;
+            return;
         }
 
         private Type getViewColumnType(ViewColumn column, QualifiedObjectName name, Node node)
