@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.slice.Slice;
 import io.prestosql.FullConnectorSession;
 import io.prestosql.Session;
+import io.prestosql.SystemSessionProperties;
 import io.prestosql.metadata.Metadata;
 import io.prestosql.metadata.QualifiedObjectName;
 import io.prestosql.metadata.QualifiedTablePrefix;
@@ -306,7 +307,14 @@ public class InformationSchemaMetadata
         }
 
         Session session = ((FullConnectorSession) connectorSession).getSession();
-        return metadata.listSchemaNames(session, catalogName).stream()
+        List<String> schemaWhitelist = SystemSessionProperties.getSchemaWhiteListInInformationSchema(session);
+        List<String> catalogWhitelist = SystemSessionProperties.getCatalogWhiteListInInformationSchema(session);
+        List<String> schemaList =
+                            (catalogWhitelist.contains(catalogName) && !schemaWhitelist.isEmpty())
+                                ? schemaWhitelist :
+                                metadata.listSchemaNames(session, catalogName);
+
+        return schemaList.stream()
                 .filter(schema -> !predicate.isPresent() || predicate.get().test(schemaAsFixedValues(schema)))
                 .map(schema -> new QualifiedTablePrefix(catalogName, schema))
                 .collect(toImmutableSet());

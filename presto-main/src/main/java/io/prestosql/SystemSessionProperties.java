@@ -142,6 +142,8 @@ public final class SystemSessionProperties
     public static final String QUERY_MAX_TOTAL_MEMORY_PER_NODE = "query_max_total_memory_per_node";
     public static final String DYNAMIC_FILTERING_MAX_PER_DRIVER_ROW_COUNT = "dynamic_filtering_max_per_driver_row_count";
     public static final String DYNAMIC_FILTERING_MAX_PER_DRIVER_SIZE = "dynamic_filtering_max_per_driver_size";
+    public static final String SCHEMA_WHITELIST_IN_INFORMATION_SCHEMA = "schema_whitelist_in_information_schema";
+    public static final String CATALOG_WHITELIST_IN_INFORMATION_SCHEMA = "catalog_whitelist_in_information_schema";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -618,7 +620,15 @@ public final class SystemSessionProperties
                         DYNAMIC_FILTERING_MAX_PER_DRIVER_SIZE,
                         "Experimental: maximum number of bytes to be collected for dynamic filtering per-driver",
                         featuresConfig.getDynamicFilteringMaxPerDriverSize(),
-                        false));
+                        false),
+                stringProperty(SCHEMA_WHITELIST_IN_INFORMATION_SCHEMA,
+                    "List of schemas to be shown in hive catalog when querying information_schema",
+                    featuresConfig.getSchemaWhitelistInInformationSchema(),
+                    false),
+                stringProperty(CATALOG_WHITELIST_IN_INFORMATION_SCHEMA,
+                    "List of schemas to be shown in hive catalog when querying information_schema",
+                    featuresConfig.getCatalogWhitelistInInformationSchema(),
+                    false));
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -1078,5 +1088,23 @@ public final class SystemSessionProperties
     public static DataSize getDynamicFilteringMaxPerDriverSize(Session session)
     {
         return session.getSystemProperty(DYNAMIC_FILTERING_MAX_PER_DRIVER_SIZE, DataSize.class);
+    }
+
+    public static List<String> getSchemaWhiteListInInformationSchema(Session session)
+    {
+        final String schemaList = session.getSystemProperty(SCHEMA_WHITELIST_IN_INFORMATION_SCHEMA, String.class);
+        if (schemaList != null) {
+            return Arrays.asList(schemaList.split(","));
+        }
+        return Collections.emptyList();
+    }
+
+    public static List<String> getCatalogWhiteListInInformationSchema(Session session)
+    {
+        final String catalogList = session.getSystemProperty(CATALOG_WHITELIST_IN_INFORMATION_SCHEMA, String.class);
+        if (catalogList != null) {
+            return Arrays.asList(catalogList.split(","));
+        }
+        return Collections.emptyList();
     }
 }

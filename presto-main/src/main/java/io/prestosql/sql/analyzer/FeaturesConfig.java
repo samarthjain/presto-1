@@ -136,6 +136,9 @@ public class FeaturesConfig
     private String metacatCatalogMapping;
     private String icebergCatalogMapping;
 
+    private String schemaWhitelistInInformationSchema;
+    private String catalogWhitelistInInformationSchema;
+
     public enum JoinReorderingStrategy
     {
         NONE,
@@ -981,5 +984,27 @@ public class FeaturesConfig
     public void setIcebergCatalogMapping(String icebergCatalogMapping)
     {
         this.icebergCatalogMapping = icebergCatalogMapping;
+    }
+
+    @Config("schema-whitelist-in-information-schema")
+    public void setSchemaWhitelistInInformationSchema(String schemaList)
+    {
+        this.schemaWhitelistInInformationSchema = schemaList;
+    }
+
+    public String getSchemaWhitelistInInformationSchema()
+    {
+        return schemaWhitelistInInformationSchema;
+    }
+
+    @Config("catalog-whitelist-in-information-schema")
+    public void setCatalogWhitelistInInformationSchema(String catalogList)
+    {
+        this.catalogWhitelistInInformationSchema = catalogList;
+    }
+
+    public String getCatalogWhitelistInInformationSchema()
+    {
+        return catalogWhitelistInInformationSchema;
     }
 }
