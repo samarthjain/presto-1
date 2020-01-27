@@ -1620,7 +1620,7 @@ public class HiveMetadata
                     .orElseThrow(() -> new SchemaNotFoundException(schemaName));
             Configuration configuration = getConfiguration(session, viewName.getSchemaName());
             commonViewUtils.writeCommonViewDefinition(configuration, properties, definition, typeManager,
-                    session.getCatalog(), viewName,
+                    session, viewName,
                     replace, existing.isPresent());
         }
     }
@@ -1639,7 +1639,7 @@ public class HiveMetadata
 
         if (isCommonView) {
             Configuration configuration = getConfiguration(session, viewName.getSchemaName());
-            commonViewUtils.dropView(configuration, session.getCatalog(), viewName);
+            commonViewUtils.dropView(configuration, session, viewName);
         }
         try {
             metastore.dropTable(session, viewName.getSchemaName(), viewName.getTableName());
@@ -1707,7 +1707,7 @@ public class HiveMetadata
                 .orElseThrow(() -> new SchemaNotFoundException(viewName.getSchemaName()));
         if (isCommonView) {
             Configuration configuration = getConfiguration(session, viewName.getSchemaName());
-            return commonViewUtils.decodeCommonViewData(configuration, session, typeManager, session.getCatalog(), viewName);
+            return commonViewUtils.decodeCommonViewData(configuration, session, typeManager, viewName);
         }
         return getPrestoViewDefinition(view, viewName);
     }

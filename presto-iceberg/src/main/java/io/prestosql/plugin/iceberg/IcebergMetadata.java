@@ -671,7 +671,7 @@ public class IcebergMetadata
                     .orElseThrow(() -> new SchemaNotFoundException(schemaName));
             Configuration configuration = getConfiguration(session, viewName.getSchemaName());
             commonViewUtils.writeCommonViewDefinition(configuration, properties, definition, typeManager,
-                    icebergConfig.getMetacatCatalogName(), viewName,
+                    session, viewName,
                     replace, existing.isPresent());
         }
     }
@@ -690,7 +690,7 @@ public class IcebergMetadata
 
         if (isCommonView) {
             Configuration configuration = getConfiguration(session, viewName.getSchemaName());
-            commonViewUtils.dropView(configuration, session.getCatalog(), viewName);
+            commonViewUtils.dropView(configuration, session, viewName);
         }
         try {
             metastore.dropTable(viewName.getSchemaName(), viewName.getTableName(), true);
@@ -766,7 +766,7 @@ public class IcebergMetadata
             Database database = metastore.getDatabase(viewName.getSchemaName())
                     .orElseThrow(() -> new SchemaNotFoundException(viewName.getSchemaName()));
             Configuration configuration = getConfiguration(session, viewName.getSchemaName());
-            return commonViewUtils.decodeCommonViewData(configuration, session, typeManager, session.getCatalog(), viewName);
+            return commonViewUtils.decodeCommonViewData(configuration, session, typeManager, viewName);
         }
         return getPrestoViewDefinition(view, viewName);
     }

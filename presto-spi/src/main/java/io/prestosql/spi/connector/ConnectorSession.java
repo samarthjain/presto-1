@@ -16,7 +16,9 @@ package io.prestosql.spi.connector;
 import io.prestosql.spi.security.ConnectorIdentity;
 import io.prestosql.spi.type.TimeZoneKey;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ConnectorSession
@@ -40,6 +42,11 @@ public interface ConnectorSession
     default String getGenieJobId()
     {
         return "";
+    }
+
+    default Map<String, String> getMetacatCatalogMapping()
+    {
+        return new HashMap<>();
     }
 
     TimeZoneKey getTimeZoneKey();

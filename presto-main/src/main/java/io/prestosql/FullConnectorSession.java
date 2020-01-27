@@ -41,6 +41,7 @@ public class FullConnectorSession
     private final SessionPropertyManager sessionPropertyManager;
     private final boolean isLegacyTimestamp;
     private final String genieJobId;
+    private final Map<String, String> metacatCatalogMapping;
 
     public FullConnectorSession(Session session, ConnectorIdentity identity)
     {
@@ -52,6 +53,7 @@ public class FullConnectorSession
         this.sessionPropertyManager = null;
         this.isLegacyTimestamp = SystemSessionProperties.isLegacyTimestamp(session);
         this.genieJobId = SystemSessionProperties.getGenieJobId(session);
+        this.metacatCatalogMapping = SystemSessionProperties.getMetacatCatalogMapping(session);
     }
 
     public FullConnectorSession(
@@ -70,6 +72,7 @@ public class FullConnectorSession
         this.sessionPropertyManager = requireNonNull(sessionPropertyManager, "sessionPropertyManager is null");
         this.isLegacyTimestamp = SystemSessionProperties.isLegacyTimestamp(session);
         this.genieJobId = SystemSessionProperties.getGenieJobId(session);
+        this.metacatCatalogMapping = SystemSessionProperties.getMetacatCatalogMapping(session);
     }
 
     public Session getSession()
@@ -135,6 +138,12 @@ public class FullConnectorSession
     public String getGenieJobId()
     {
         return genieJobId;
+    }
+
+    @Override
+    public Map<String, String> getMetacatCatalogMapping()
+    {
+        return metacatCatalogMapping;
     }
 
     @Override

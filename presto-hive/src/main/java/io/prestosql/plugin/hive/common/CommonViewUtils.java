@@ -49,6 +49,21 @@ public class CommonViewUtils
         this.config = viewConfig;
     }
 
+    public static String getMetacatCatalogName(ConnectorSession session, String catalogName)
+    {
+        final Map<String, String> metacatCatalogMapping = session.getMetacatCatalogMapping();
+        if (metacatCatalogMapping.containsKey(catalogName)) {
+            return metacatCatalogMapping.get(catalogName);
+        }
+        return catalogName;
+    }
+
+    public String getMetacatCatalogName(ConnectorSession session)
+    {
+        String catalogName = session.getCatalog();
+        return getMetacatCatalogName(session, catalogName);
+    }
+
     public MetacatViewCatalog getViewCatalog(Configuration configuration)
     {
         configuration.set(NETFLIX_METACAT_HOST, config.getMetastoreRestEndpoint());
@@ -87,7 +102,7 @@ public class CommonViewUtils
     public void writeCommonViewDefinition(Configuration configuration,
             Map<String, String> properties,
             ConnectorViewDefinition definition, TypeManager typeManager,
-            String catalog, SchemaTableName viewName,
+            ConnectorSession session, SchemaTableName viewName,
             boolean replace, boolean viewExists)
     {
         org.apache.iceberg.Schema schema = viewColsToIcebergSchema(typeManager, definition.getColumns());
@@ -95,27 +110,31 @@ public class CommonViewUtils
         if (definition.getSchema().isPresent()) {
             namespaces.add(definition.getSchema().get());
         }
+
+        String metacatCatalogName = CommonViewUtils.getMetacatCatalogName(session, definition.getCatalog().get());
+
         ConnectorCommonViewDefinition connectorCommonViewDefinition = new
-                ConnectorCommonViewDefinition(definition.getOriginalSql(), definition.getCatalog().get(),
+                ConnectorCommonViewDefinition(definition.getOriginalSql(), metacatCatalogName,
                 namespaces,
                 schema, definition.getOwner());
-        encodeAndWriteCommonViewData(configuration, properties, connectorCommonViewDefinition, catalog, viewName,
+        encodeAndWriteCommonViewData(configuration, properties, connectorCommonViewDefinition, session, viewName,
                 replace, viewExists);
     }
 
     public void encodeAndWriteCommonViewData(Configuration configuration,
             Map<String, String> properties,
             ConnectorCommonViewDefinition definition,
-            String catalogName,
+            ConnectorSession session,
             SchemaTableName name,
             boolean replace, boolean viewExists)
     {
+        String metacatCatalogName = getMetacatCatalogName(session);
         MetacatViewCatalog catalog = getViewCatalog(configuration);
         Preconditions.checkState(definition.getCatalog() != null);
         ViewDefinition metadata = ViewDefinition.of(definition.getOriginalSql(), definition.getColumns(),
                 definition.getCatalog(), definition.getSchema());
 
-        String viewName = catalogName + "." + name.toString();
+        String viewName = metacatCatalogName + "." + name.toString();
         if (viewExists) {
             if (!replace) {
                 throw new ViewAlreadyExistsException(name);
@@ -129,11 +148,11 @@ public class CommonViewUtils
     public Optional<ConnectorViewDefinition> decodeCommonViewData(Configuration configuration,
             ConnectorSession session,
             TypeManager typeManager,
-            String catalogName,
             SchemaTableName name)
     {
+        String metacatCatalogName = getMetacatCatalogName(session);
         MetacatViewCatalog catalog = getViewCatalog(configuration);
-        String viewName = catalogName + "." + name.toString();
+        String viewName = metacatCatalogName + "." + name.toString();
         ViewDefinition viewDefinition = catalog.loadDefinition(viewName);
 
         String sessionNameSpace = viewDefinition.sessionNamespace().size() > 0 ? viewDefinition.sessionNamespace().get(0) : "";
@@ -145,10 +164,11 @@ public class CommonViewUtils
         return Optional.of(definition);
     }
 
-    public void dropView(Configuration configuration, String catalogName, SchemaTableName name)
+    public void dropView(Configuration configuration, ConnectorSession session, SchemaTableName name)
     {
+        String metacatCatalogName = getMetacatCatalogName(session);
         MetacatViewCatalog catalog = getViewCatalog(configuration);
-        catalog.drop(catalogName + "." + name.toString());
+        catalog.drop(metacatCatalogName + "." + name.toString());
     }
 
     public static Path getTargetPath(SchemaTableName name, HdfsEnvironment hdfsEnvironment, Database database,
