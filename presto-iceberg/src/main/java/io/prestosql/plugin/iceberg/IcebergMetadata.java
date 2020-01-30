@@ -36,6 +36,7 @@ import io.prestosql.plugin.hive.metastore.Database;
 import io.prestosql.plugin.hive.metastore.HiveMetastore;
 import io.prestosql.plugin.hive.metastore.PrincipalPrivileges;
 import io.prestosql.plugin.hive.metastore.Table;
+import io.prestosql.plugin.iceberg.statistics.IcebergStatisticsProvider;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
@@ -59,6 +60,7 @@ import io.prestosql.spi.connector.TableNotFoundException;
 import io.prestosql.spi.connector.ViewNotFoundException;
 import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.statistics.ComputedStatistics;
+import io.prestosql.spi.statistics.TableStatistics;
 import io.prestosql.spi.type.TypeManager;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -68,6 +70,7 @@ import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.PartitionSpecParser;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.SchemaParser;
+import org.apache.iceberg.TableScan;
 import org.apache.iceberg.Transaction;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.hadoop.HadoopInputFile;
@@ -96,6 +99,7 @@ import static io.prestosql.plugin.hive.HiveMetadata.PRESTO_VERSION_NAME;
 import static io.prestosql.plugin.hive.HiveMetadata.TABLE_COMMENT;
 import static io.prestosql.plugin.hive.HiveSchemaProperties.getLocation;
 import static io.prestosql.plugin.hive.HiveSessionProperties.isCommonViewSupportEnabled;
+import static io.prestosql.plugin.hive.HiveSessionProperties.isStatisticsEnabled;
 import static io.prestosql.plugin.hive.HiveType.HIVE_STRING;
 import static io.prestosql.plugin.hive.HiveUtil.PRESTO_VIEW_FLAG;
 import static io.prestosql.plugin.hive.HiveUtil.decodeViewData;
@@ -143,6 +147,7 @@ public class IcebergMetadata
     private IcebergConfig icebergConfig;
     private IcebergUtil icebergUtil;
     private Transaction transaction;
+    private final IcebergStatisticsProvider icebergStatisticsProvider;
 
     @Inject
     public IcebergMetadata(
@@ -153,7 +158,8 @@ public class IcebergMetadata
             IcebergConfig icebergConfig,
             IcebergUtil icebergUtil,
             String prestoVersion,
-            ViewConfig viewConfig)
+            ViewConfig viewConfig,
+            IcebergStatisticsProvider icebergStatisticsProvider)
     {
         this.metastore = requireNonNull(metastore, "metastore is null");
         this.hdfsEnvironment = requireNonNull(hdfsEnvironment, "hdfsEnvironment is null");
@@ -164,6 +170,7 @@ public class IcebergMetadata
         this.icebergUtil = icebergUtil;
         this.viewConfig = viewConfig;
         this.commonViewUtils = new CommonViewUtils(viewConfig);
+        this.icebergStatisticsProvider = icebergStatisticsProvider;
     }
 
     @Override
@@ -789,5 +796,19 @@ public class IcebergMetadata
             }
         }
         return views.build();
+    }
+
+    @Override
+    public TableStatistics getTableStatistics(ConnectorSession session, ConnectorTableHandle tableHandle, Constraint constraint)
+    {
+        if (!isStatisticsEnabled(session)) {
+            return TableStatistics.empty();
+        }
+        IcebergTableHandle table = (IcebergTableHandle) tableHandle;
+        Configuration configuration = getConfiguration(session, table.getSchemaName());
+        org.apache.iceberg.Table icebergTable = icebergUtil.getIcebergTable(table.getSchemaName(), table.getTableName(), configuration, metastore);
+        TableScan tableScan = IcebergUtil.getTableScan(session, table.getPredicate(), table.getSnapshotId(), icebergTable);
+        Map<String, ColumnHandle> columns = getColumnHandles(session, tableHandle);
+        return icebergStatisticsProvider.getTableStatistics(table.getTableName(), table.getSnapshotId(), tableScan, columns, session);
     }
 }

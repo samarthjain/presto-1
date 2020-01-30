@@ -19,6 +19,7 @@ import io.prestosql.plugin.hive.HiveConfig;
 import io.prestosql.plugin.hive.NodeVersion;
 import io.prestosql.plugin.hive.common.ViewConfig;
 import io.prestosql.plugin.hive.metastore.HiveMetastore;
+import io.prestosql.plugin.iceberg.statistics.IcebergStatisticsProvider;
 import io.prestosql.spi.type.TypeManager;
 
 import javax.inject.Inject;
@@ -94,6 +95,7 @@ public class IcebergMetadataFactory
                 icebergConfig,
                 icebergUtil,
                 prestoVersion,
-                viewConfig);
+                viewConfig,
+                new IcebergStatisticsProvider());
     }
 }

@@ -37,6 +37,7 @@ public final class IcebergSessionProperties
     private static final String PARQUET_WRITER_PAGE_SIZE = "parquet_writer_page_size";
     public static final String AWS_IAM_ROLE = "aws_iam_role";
     private static final String COMMON_VIEW_SUPPORT = "common_view_support";
+    private static final String STATISTICS_ENABLED = "statistics_enabled";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -73,6 +74,11 @@ public final class IcebergSessionProperties
                         COMMON_VIEW_SUPPORT,
                         "Allow views to be shared with Spark",
                         hiveConfig.isCommonViewSupportEnabled(),
+                        false))
+                .add(booleanProperty(
+                        STATISTICS_ENABLED,
+                        "Expose table statistics",
+                        hiveConfig.isTableStatisticsEnabled(),
                         false))
                 .build();
     }
