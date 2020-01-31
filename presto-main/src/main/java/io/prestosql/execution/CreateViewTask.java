@@ -33,6 +33,7 @@ import io.prestosql.transaction.TransactionManager;
 import javax.inject.Inject;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -81,10 +82,9 @@ public class CreateViewTask
         CatalogName viewCatalog = new CatalogName(name.getCatalogName());
         String commonViewSupportEnabled = session.getConnectorProperties(viewCatalog).getOrDefault("common_view_support", "true");
         if (commonViewSupportEnabled.equalsIgnoreCase("true")) {
-            String selectSql = stateMachine.getQuery().toLowerCase();
+            String selectSql = stateMachine.getQuery().toLowerCase(Locale.ENGLISH);
             String[] parts = selectSql.split("[\\s|\\n]+as[\\s|\\n]+", 2);
-            if (parts.length == 2)
-            {
+            if (parts.length == 2) {
                 sql = parts[1];
             }
         }
