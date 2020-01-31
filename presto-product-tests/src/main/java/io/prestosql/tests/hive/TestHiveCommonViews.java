@@ -20,7 +20,7 @@ public class TestHiveCommonViews
 {
     private static final String BASE_TABLE_NAME = "testhive.common_view.base_tab" + System.currentTimeMillis();
     private static final String BASE_TABLE_SCHEMA = "testhive.common_view";
-    private static final String COMMON_VIEW_SIMPLE = "testhive.common_view.simple";
+    private static final String COMMON_VIEW_SIMPLE = "testhive.common_view.simple2";
     private static final String PRESTO_VIEW_SIMPLE = "testhive.common_view.simple_native";
 
     @BeforeTestWithContext
@@ -200,7 +200,7 @@ public class TestHiveCommonViews
         expectedSQL = format("" +
                         "CREATE VIEW %s AS\n" +
                         "SELECT\n" +
-                        "  sum(1) my_sum\n" +
+                        "  \"sum\"(1) my_sum\n" +
                         ", c2\n" +
                         "FROM\n" +
                         "  %s\n" +
@@ -241,7 +241,7 @@ public class TestHiveCommonViews
         String createViewSql5 = format("" +
                         "CREATE VIEW %s AS\n" +
                         "SELECT\n" +
-                        "  sum(1) my_sum\n" +
+                        "  \"sum\"(1) my_sum\n" +
                         ", c2\n" +
                         "FROM\n" +
                         "  %s\n" +
