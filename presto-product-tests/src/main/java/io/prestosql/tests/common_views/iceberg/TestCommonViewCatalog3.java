@@ -1,4 +1,4 @@
-package io.prestosql.tests.hive;
+package io.prestosql.tests.common_views.iceberg;
 
 import io.prestosql.tempto.AfterTestWithContext;
 import io.prestosql.tempto.BeforeTestWithContext;
@@ -40,10 +40,10 @@ public class TestCommonViewCatalog3
     @Test(groups = COMMON_VIEW)
     public void testCommonViewCatalog3()
     {
-        query ("use hive.cat_test");
-        query ("drop view prod_view2");
-        query("drop view prodhive.cat_test.prod_view3");
-        query ("use prodhive.cat_test");
-        query ("drop view prod_view4");
+        query ("use iceberg.cat_test");
+        query ("drop view prod_view_ice2");
+        query("drop view prodhive.cat_test.prod_view_ice3");
+        query ("use prodiceberg.cat_test");
+        query ("drop view prod_view_ice4");
     }
 }

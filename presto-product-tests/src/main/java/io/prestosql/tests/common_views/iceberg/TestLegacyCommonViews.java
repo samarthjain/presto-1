@@ -1,4 +1,4 @@
-package io.prestosql.tests.iceberg;
+package io.prestosql.tests.common_views.iceberg;
 
 import io.prestosql.tempto.AfterTestWithContext;
 import io.prestosql.tempto.BeforeTestWithContext;

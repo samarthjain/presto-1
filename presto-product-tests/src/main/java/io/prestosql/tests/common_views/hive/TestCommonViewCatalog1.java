@@ -1,4 +1,4 @@
-package io.prestosql.tests.iceberg;
+package io.prestosql.tests.common_views.hive;
 
 import io.airlift.log.Logger;
 import io.prestosql.tempto.AfterTestWithContext;
@@ -26,27 +26,27 @@ public class TestCommonViewCatalog1
      *          and restarting the presto cluster.
      *          The test ensures that the created views are dropped correctly.
      */
-    private static final String BASE1 = "base_tab_ice";
-    private static final String BASE2 = "testhive_base_tab_ice";
+    private static final String BASE1 = "base_tab";
+    private static final String BASE2 = "testhive_base_tab";
 
     @BeforeTestWithContext
     public void createObjects()
     {
         query("create schema if not exists testhive.cat_test");
-        query("use testiceberg.cat_test");
-        query("create table if not exists testhive.cat_test." + BASE2 + "(c1 int, c2 int)");
+        query("use testhive.cat_test");
+        query("create table if not exists " + BASE2 + "(c1 int, c2 int)");
 
-        query("create schema if not exists iceberg.cat_test");
-        query("use iceberg.cat_test");
+        query("create schema if not exists hive.cat_test");
+        query("use hive.cat_test");
         query("create table if not exists " + BASE1 + "(c1 int, c2 int)");
 
-        query("create or replace view prod_view_ice as select * from " + BASE1);
+        query("create or replace view prod_view as select * from " + BASE1);
 
-        query("create or replace view prod_view_ice2 as select * from testhive.cat_test." + BASE2);
+        query("create or replace view prod_view2 as select * from testhive.cat_test." + BASE2);
 
-        query("create or replace view prod_view_ice3 as select * from hive.cat_test." + BASE1);
+        query("create or replace view prod_view3 as select * from hive.cat_test." + BASE1);
 
-        query("create or replace view hive.cat_test.prod_view_ice4 as select * from hive.cat_test." + BASE1);
+        query("create or replace view hive.cat_test.prod_view4 as select * from hive.cat_test." + BASE1);
     }
 
     @AfterTestWithContext
@@ -57,50 +57,50 @@ public class TestCommonViewCatalog1
     @Test(groups = COMMON_VIEW)
     public void testCommonViewCatalog1()
     {
-        query("use iceberg.cat_test");
-        query("select * from prod_view_ice");
-        query("select * from prod_view_ice2");
-        query("select * from prod_view_ice3");
-        query("select * from prod_view_ice4");
-        query("select * from prodhive.cat_test.prod_view_ice");
-        query("select * from prodhive.cat_test.prod_view_ice2");
-        query("select * from prodhive.cat_test.prod_view_ice3");
-        query("select * from prodhive.cat_test.prod_view_ice4");
+        query("use hive.cat_test");
+        query("select * from prod_view");
+        query("select * from prod_view2");
+        query("select * from prod_view3");
+        query("select * from prod_view4");
+        query("select * from prodhive.cat_test.prod_view");
+        query("select * from prodhive.cat_test.prod_view2");
+        query("select * from prodhive.cat_test.prod_view3");
+        query("select * from prodhive.cat_test.prod_view4");
 
-        query("use prodiceberg.cat_test");
+        query("use prodhive.cat_test");
 
-        query("select * from prod_view_ice");
-        query("select * from prod_view_ice2");
-        query("select * from prod_view_ice3");
-        query("select * from prod_view_ice4");
+        query("select * from prod_view");
+        query("select * from prod_view2");
+        query("select * from prod_view3");
+        query("select * from prod_view4");
 
-        query("use testiceberg.cat_test");
+        query("use testhive.cat_test");
 
         // does not work, it is expected
         try {
-            query("select * from prod_view_ice");
+            query("select * from prod_view");
         } catch (Exception e) {
             Logger.get(getClass()).warn(e, "Catalog resolution is expected to fail.");
         }
         try {
-            query("select * from prod_view_ice2");
+            query("select * from prod_view2");
         } catch (Exception e) {
             Logger.get(getClass()).warn(e, "Catalog resolution is expected to fail.");
         }
         try {
-            query("select * from prod_view_ice3");
+            query("select * from prod_view3");
         } catch (Exception e) {
             Logger.get(getClass()).warn(e, "Catalog resolution is expected to fail.");
         }
         try {
-            query("select * from prod_view_ice4");
+            query("select * from prod_view4");
         } catch (Exception e) {
             Logger.get(getClass()).warn(e, "Catalog resolution is expected to fail.");
         }
 
-        query("select * from prodhive.cat_test.prod_view_ice");
-        query("select * from prodhive.cat_test.prod_view_ice2");
-        query("select * from prodhive.cat_test.prod_view_ice3");
-        query("select * from prodhive.cat_test.prod_view_ice4");
+        query("select * from prodhive.cat_test.prod_view");
+        query("select * from prodhive.cat_test.prod_view2");
+        query("select * from prodhive.cat_test.prod_view3");
+        query("select * from prodhive.cat_test.prod_view4");
     }
 }

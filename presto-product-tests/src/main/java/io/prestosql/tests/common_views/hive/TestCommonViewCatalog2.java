@@ -1,4 +1,4 @@
-package io.prestosql.tests.hive;
+package io.prestosql.tests.common_views.hive;
 
 import io.airlift.log.Logger;
 import io.prestosql.tempto.AfterTestWithContext;

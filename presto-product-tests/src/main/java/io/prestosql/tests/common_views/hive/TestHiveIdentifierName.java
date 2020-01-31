@@ -1,4 +1,4 @@
-package io.prestosql.tests.hive;
+package io.prestosql.tests.common_views.hive;
 
 import io.prestosql.tempto.AfterTestWithContext;
 import io.prestosql.tempto.BeforeTestWithContext;

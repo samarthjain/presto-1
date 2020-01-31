@@ -1,4 +1,4 @@
-package io.prestosql.tests.hive;
+package io.prestosql.tests.common_views.iceberg;
 
 import io.airlift.log.Logger;
 import io.prestosql.tempto.AfterTestWithContext;
@@ -15,26 +15,26 @@ import static io.prestosql.tests.TestGroups.COMMON_VIEW;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 
-public class TestHiveCommonViews
+public class TestIcebergCommonViews
         extends ProductTest
 {
-    private static final String BASE_TABLE_NAME = "testhive.common_view.base_tab" + System.currentTimeMillis();
-    private static final String BASE_TABLE_SCHEMA = "testhive.common_view";
-    private static final String COMMON_VIEW_SIMPLE = "testhive.common_view.simple2";
-    private static final String PRESTO_VIEW_SIMPLE = "testhive.common_view.simple_native";
+    private static final String ICEBERG_TABLE_NAME = "testiceberg.ice_common_view.ice_tab" + System.currentTimeMillis();
+    private static final String ICEBERG_TABLE_SCHEMA = "testiceberg.ice_common_view";
+    private static final String ICEBERG_VIEW_SIMPLE = "testiceberg.ice_common_view.ice_simple";
+    private static final String PRESTO_VIEW_SIMPLE = "testiceberg.ice_common_view.ice_simple_native";
 
     @BeforeTestWithContext
     public void createObjects()
     {
-        // Drop Hive tables, views and schema
+        // Drop Iceberg tables, views and schema
         try {
-            query("DROP TABLE IF EXISTS " + BASE_TABLE_NAME);
+            query("DROP TABLE IF EXISTS " + ICEBERG_TABLE_NAME);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop table");
         }
         try {
-            query("DROP VIEW IF EXISTS " + COMMON_VIEW_SIMPLE);
+            query("DROP VIEW IF EXISTS " + ICEBERG_VIEW_SIMPLE);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop view");
@@ -46,28 +46,28 @@ public class TestHiveCommonViews
             Logger.get(getClass()).warn(e, "failed to drop view");
         }
         try {
-            query("DROP SCHEMA IF EXISTS " + BASE_TABLE_SCHEMA);
+            query("DROP SCHEMA IF EXISTS " + ICEBERG_TABLE_SCHEMA);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop schema");
         }
 
-        // Create hive schema, table and insert data
+        // Create iceberg schema, table and insert data
         try {
-            query("CREATE SCHEMA IF NOT EXISTS " + BASE_TABLE_SCHEMA);
+            query("CREATE SCHEMA IF NOT EXISTS " + ICEBERG_TABLE_SCHEMA);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to create schema");
         }
         try {
-            query("CREATE TABLE IF NOT EXISTS " + BASE_TABLE_NAME +
+            query("CREATE TABLE IF NOT EXISTS " + ICEBERG_TABLE_NAME +
                     "(c1 int, c2 varchar)");
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to create table");
         }
         try {
-            query("INSERT INTO " + BASE_TABLE_NAME +
+            query("INSERT INTO " + ICEBERG_TABLE_NAME +
                     " VALUES (1, 'one'), (2, 'two'), (2, 'two'), (2, 'dos')");
         }
         catch (Exception e) {
@@ -78,15 +78,15 @@ public class TestHiveCommonViews
     @AfterTestWithContext
     public void dropObjects()
     {
-        // Drop Hive tables, views and schema
+        // Drop Iceberg tables, views and schema
         try {
-            query("DROP TABLE IF EXISTS " + BASE_TABLE_NAME);
+            query("DROP TABLE IF EXISTS " + ICEBERG_TABLE_NAME);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop table");
         }
         try {
-            query("DROP VIEW IF EXISTS " + COMMON_VIEW_SIMPLE);
+            query("DROP VIEW IF EXISTS " + ICEBERG_VIEW_SIMPLE);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop view");
@@ -98,7 +98,7 @@ public class TestHiveCommonViews
             Logger.get(getClass()).warn(e, "failed to drop view");
         }
         try {
-            query("DROP SCHEMA IF EXISTS " + BASE_TABLE_SCHEMA);
+            query("DROP SCHEMA IF EXISTS " + ICEBERG_TABLE_SCHEMA);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop schema");
@@ -106,26 +106,26 @@ public class TestHiveCommonViews
     }
 
     @Test(groups = COMMON_VIEW)
-    public void testCreateReplaceHiveViews()
+    public void testCreateReplaceIcebergViews()
     {
         // Test common view creation
         String createViewSql = format("" +
-                "CREATE VIEW %s AS\n" +
+                        "CREATE VIEW %s AS\n" +
                         "SELECT *\n" +
                         "FROM\n" +
                         "  %s",
-                COMMON_VIEW_SIMPLE, BASE_TABLE_NAME);
+                ICEBERG_VIEW_SIMPLE, ICEBERG_TABLE_NAME);
 
         query(createViewSql);
-        QueryResult actualResult = query("SHOW CREATE VIEW " + COMMON_VIEW_SIMPLE);
+        QueryResult actualResult = query("SHOW CREATE VIEW " + ICEBERG_VIEW_SIMPLE);
         assertEquals(actualResult.row(0).get(0), createViewSql);
 
         // Check the schema of the view
-        assertThat(query("SHOW COLUMNS FROM " + COMMON_VIEW_SIMPLE).project(1, 2)).containsExactly(
+        assertThat(query("SHOW COLUMNS FROM " + ICEBERG_VIEW_SIMPLE).project(1, 2)).containsExactly(
                 row("c1", "integer"),
                 row("c2", "varchar"));
 
-        assertThat(query("SELECT * FROM " + COMMON_VIEW_SIMPLE + " ORDER BY c1, c2"))
+        assertThat(query("SELECT * FROM " + ICEBERG_VIEW_SIMPLE + " ORDER BY c1, c2"))
                 .containsExactly(
                         row(1, "one"),
                         row(2, "dos"),
@@ -145,7 +145,7 @@ public class TestHiveCommonViews
                         "SELECT c1, c2\n" +
                         "FROM\n" +
                         "  %s",
-                COMMON_VIEW_SIMPLE, BASE_TABLE_NAME);
+                ICEBERG_VIEW_SIMPLE, ICEBERG_TABLE_NAME);
         try {
             query(createViewSql2);
         } catch (QueryExecutionException e) {
@@ -160,9 +160,9 @@ public class TestHiveCommonViews
                         ", c2\n" +
                         "FROM\n" +
                         "  %s",
-                COMMON_VIEW_SIMPLE, BASE_TABLE_NAME);
+                ICEBERG_VIEW_SIMPLE, ICEBERG_TABLE_NAME);
         query(createViewSql3);
-        actualResult = query("SHOW CREATE VIEW " + COMMON_VIEW_SIMPLE);
+        actualResult = query("SHOW CREATE VIEW " + ICEBERG_VIEW_SIMPLE);
         String expectedSQL = format("" +
                         "CREATE VIEW %s AS\n" +
                         "SELECT\n" +
@@ -170,15 +170,15 @@ public class TestHiveCommonViews
                         ", c2\n" +
                         "FROM\n" +
                         "  %s",
-                COMMON_VIEW_SIMPLE, BASE_TABLE_NAME);
+                ICEBERG_VIEW_SIMPLE, ICEBERG_TABLE_NAME);
         assertEquals(actualResult.row(0).get(0), expectedSQL);
 
         // Check the schema of the view
-        assertThat(query("SHOW COLUMNS FROM " + COMMON_VIEW_SIMPLE).project(1, 2)).containsExactly(
+        assertThat(query("SHOW COLUMNS FROM " + ICEBERG_VIEW_SIMPLE).project(1, 2)).containsExactly(
                 row("c1", "integer"),
                 row("c2", "varchar"));
 
-        assertThat(query("SELECT * FROM " + COMMON_VIEW_SIMPLE + " ORDER BY c1, c2"))
+        assertThat(query("SELECT * FROM " + ICEBERG_VIEW_SIMPLE + " ORDER BY c1, c2"))
                 .containsExactly(
                         row(1, "one"),
                         row(2, "dos"),
@@ -194,9 +194,9 @@ public class TestHiveCommonViews
                         "FROM\n" +
                         "  %s\n" +
                         "GROUP BY c2",
-                COMMON_VIEW_SIMPLE, BASE_TABLE_NAME);
+                ICEBERG_VIEW_SIMPLE, ICEBERG_TABLE_NAME);
         query(createViewSql4);
-        actualResult = query("SHOW CREATE VIEW " + COMMON_VIEW_SIMPLE);
+        actualResult = query("SHOW CREATE VIEW " + ICEBERG_VIEW_SIMPLE);
         expectedSQL = format("" +
                         "CREATE VIEW %s AS\n" +
                         "SELECT\n" +
@@ -205,28 +205,28 @@ public class TestHiveCommonViews
                         "FROM\n" +
                         "  %s\n" +
                         "GROUP BY c2",
-                COMMON_VIEW_SIMPLE, BASE_TABLE_NAME);
+                ICEBERG_VIEW_SIMPLE, ICEBERG_TABLE_NAME);
         assertEquals(actualResult.row(0).get(0), expectedSQL);
 
         // Check the schema of the view
-        assertThat(query("SHOW COLUMNS FROM " + COMMON_VIEW_SIMPLE).project(1, 2)).containsExactly(
+        assertThat(query("SHOW COLUMNS FROM " + ICEBERG_VIEW_SIMPLE).project(1, 2)).containsExactly(
                 row("my_sum", "bigint"),
                 row("c2", "varchar"));
 
-        assertThat(query("DESCRIBE " + COMMON_VIEW_SIMPLE).project(1, 2)).containsExactly(
+        assertThat(query("DESCRIBE " + ICEBERG_VIEW_SIMPLE).project(1, 2)).containsExactly(
                 row("my_sum", "bigint"),
                 row("c2", "varchar"));
 
-        assertThat(query("SELECT * FROM " + COMMON_VIEW_SIMPLE + " ORDER BY 1,2"))
+        assertThat(query("SELECT * FROM " + ICEBERG_VIEW_SIMPLE + " ORDER BY 1,2"))
                 .containsExactly(
                         row(1, "dos"),
                         row(1, "one"),
                         row(2, "two"));
 
         // Disable common view and check if common view can be read/replaced
-        query("set session testhive.common_view_support=false");
+        query("set session testiceberg.common_view_support=false");
         try {
-            query("SELECT * FROM " + COMMON_VIEW_SIMPLE);
+            query("SELECT * FROM " + ICEBERG_VIEW_SIMPLE);
         } catch (QueryExecutionException e) {
             Logger.get(getClass()).warn(e, "Common view is disabled. Exception as expected.");
         }
@@ -246,7 +246,7 @@ public class TestHiveCommonViews
                         "FROM\n" +
                         "  %s\n" +
                         "GROUP BY c2",
-                PRESTO_VIEW_SIMPLE, BASE_TABLE_NAME);
+                PRESTO_VIEW_SIMPLE, ICEBERG_TABLE_NAME);
         query(createViewSql5);
         actualResult = query("SHOW CREATE VIEW " + PRESTO_VIEW_SIMPLE);
         assertEquals(actualResult.row(0).get(0), createViewSql5);
