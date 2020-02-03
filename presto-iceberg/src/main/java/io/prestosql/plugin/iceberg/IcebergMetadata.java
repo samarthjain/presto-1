@@ -376,7 +376,7 @@ public class IcebergMetadata
                 SchemaParser.toJson(icebergTable.schema()),
                 PartitionSpecParser.toJson(icebergTable.spec()),
                 getColumns(icebergTable.schema(), icebergTable.spec(), typeManager),
-                targetPath.toString(),
+                getDataPath(targetPath.toString()),
                 getFileFormat(tableMetadata.getProperties()));
     }
 
