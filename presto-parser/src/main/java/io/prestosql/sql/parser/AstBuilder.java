@@ -177,6 +177,7 @@ import io.prestosql.sql.tree.With;
 import io.prestosql.sql.tree.WithQuery;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -419,12 +420,17 @@ class AstBuilder
             security = Optional.of(CreateView.Security.INVOKER);
         }
 
+        final Token start = context.query().start;
+        final Interval interval = new Interval(start.getStartIndex(), context.stop.getStopIndex());
+        final Optional<String> originalSql = Optional.of(start.getInputStream().getText(interval));
+
         return new CreateView(
-                getLocation(context),
+                Optional.of(getLocation(context)),
                 getQualifiedName(context.qualifiedName()),
                 (Query) visit(context.query()),
                 context.REPLACE() != null,
-                security);
+                security,
+                originalSql);
     }
 
     @Override

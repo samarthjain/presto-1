@@ -15,6 +15,7 @@ package io.prestosql.execution;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.prestosql.Session;
+import io.prestosql.connector.CatalogName;
 import io.prestosql.execution.warnings.WarningCollector;
 import io.prestosql.metadata.Metadata;
 import io.prestosql.metadata.QualifiedObjectName;
@@ -74,7 +75,11 @@ public class CreateViewTask
 
         accessControl.checkCanCreateView(session.getRequiredTransactionId(), session.getIdentity(), name);
 
-        String sql = getFormattedSql(statement.getQuery(), sqlParser);
+        // If common view support is enabled, use the original SQL
+        String sql = catalogSupportsCommonView(name.getCatalogName(), session) ?
+                statement.getOriginalSql()
+                        .orElseThrow(() -> new IllegalArgumentException("Cannot create common view without original SQL")) :
+                getFormattedSql(statement.getQuery(), sqlParser);
 
         Analysis analysis = analyzeStatement(statement, session, metadata, accessControl, parameters, stateMachine.getWarningCollector());
 
@@ -100,6 +105,13 @@ public class CreateViewTask
         metadata.createView(session, name, definition, statement.isReplace());
 
         return immediateFuture(null);
+    }
+
+    private static boolean catalogSupportsCommonView(String catalogName, Session session)
+    {
+        final String enabled = session.getConnectorProperties(new CatalogName(catalogName))
+                .getOrDefault("common_view_support", "true");
+        return enabled.equalsIgnoreCase("true");
     }
 
     private Analysis analyzeStatement(Statement statement, Session session, Metadata metadata, AccessControl accessControl, List<Expression> parameters, WarningCollector warningCollector)

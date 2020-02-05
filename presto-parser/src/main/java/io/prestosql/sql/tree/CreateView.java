@@ -34,24 +34,32 @@ public class CreateView
     private final Query query;
     private final boolean replace;
     private final Optional<Security> security;
+    private final Optional<String> originalSql;
 
     public CreateView(QualifiedName name, Query query, boolean replace, Optional<Security> security)
     {
-        this(Optional.empty(), name, query, replace, security);
+        this(Optional.empty(), name, query, replace, security, Optional.empty());
     }
 
     public CreateView(NodeLocation location, QualifiedName name, Query query, boolean replace, Optional<Security> security)
     {
-        this(Optional.of(location), name, query, replace, security);
+        this(Optional.of(location), name, query, replace, security, Optional.empty());
     }
 
-    private CreateView(Optional<NodeLocation> location, QualifiedName name, Query query, boolean replace, Optional<Security> security)
+    public CreateView(
+            Optional<NodeLocation> location,
+            QualifiedName name,
+            Query query,
+            boolean replace,
+            Optional<Security> security,
+            Optional<String> originalSql)
     {
         super(location);
         this.name = requireNonNull(name, "name is null");
         this.query = requireNonNull(query, "query is null");
         this.replace = replace;
         this.security = requireNonNull(security, "security is null");
+        this.originalSql = originalSql;
     }
 
     public QualifiedName getName()
@@ -72,6 +80,10 @@ public class CreateView
     public Optional<Security> getSecurity()
     {
         return security;
+    }
+
+    public Optional<String> getOriginalSql() {
+        return originalSql;
     }
 
     @Override

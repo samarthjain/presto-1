@@ -22,6 +22,7 @@ public class TestHiveCommonViews
     private static final String BASE_TABLE_SCHEMA = "testhive.common_view";
     private static final String COMMON_VIEW_SIMPLE = "testhive.common_view.simple";
     private static final String PRESTO_VIEW_SIMPLE = "testhive.common_view.simple_native";
+    private static final String COMMON_VIEW_LIMIT = "testhive.common_view.simple_limit";
 
     @BeforeTestWithContext
     public void createObjects()
@@ -41,6 +42,12 @@ public class TestHiveCommonViews
         }
         try {
             query("DROP VIEW IF EXISTS " + PRESTO_VIEW_SIMPLE);
+        }
+        catch (Exception e) {
+            Logger.get(getClass()).warn(e, "failed to drop view");
+        }
+        try {
+            query("DROP VIEW IF EXISTS " + COMMON_VIEW_LIMIT);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop view");
@@ -93,6 +100,12 @@ public class TestHiveCommonViews
         }
         try {
             query("DROP VIEW IF EXISTS " + PRESTO_VIEW_SIMPLE);
+        }
+        catch (Exception e) {
+            Logger.get(getClass()).warn(e, "failed to drop view");
+        }
+        try {
+            query("DROP VIEW IF EXISTS " + COMMON_VIEW_LIMIT);
         }
         catch (Exception e) {
             Logger.get(getClass()).warn(e, "failed to drop view");
@@ -222,6 +235,29 @@ public class TestHiveCommonViews
                         row(1, "dos"),
                         row(1, "one"),
                         row(2, "two"));
+
+        String createViewSqlPerf = "CREATE VIEW " + COMMON_VIEW_LIMIT + " AS\n" +
+                "SELECT dateint\n" +
+                "FROM\n" +
+                "  default.presto_logs\n" +
+                "WHERE ((dateint = 20200116) AND (NOT (CAST(\"nf_json_extract\"(other_properties['presto_job'], '$.data.queryState') AS varchar(250)) LIKE '%FINISHED%')))\n" +
+                "LIMIT 10";
+        query(createViewSqlPerf);
+        actualResult = query("SHOW CREATE VIEW " + COMMON_VIEW_LIMIT);
+        assertEquals(actualResult.row(0).get(0), createViewSqlPerf);
+
+        assertThat(query("SELECT * FROM " + COMMON_VIEW_LIMIT))
+                .containsExactly(
+                        row(20200116),
+                        row(20200116),
+                        row(20200116),
+                        row(20200116),
+                        row(20200116),
+                        row(20200116),
+                        row(20200116),
+                        row(20200116),
+                        row(20200116),
+                        row(20200116));
 
         // Disable common view and check if common view can be read/replaced
         query("set session testhive.common_view_support=false");
