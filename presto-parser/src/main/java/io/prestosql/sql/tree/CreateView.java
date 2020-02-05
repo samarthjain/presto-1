@@ -82,7 +82,8 @@ public class CreateView
         return security;
     }
 
-    public Optional<String> getOriginalSql() {
+    public Optional<String> getOriginalSql()
+    {
         return originalSql;
     }
 
