@@ -1167,9 +1167,4 @@ public class QueryStateMachine
             }
         }
     }
-
-    String getQuery()
-    {
-        return query;
-    }
 }
