@@ -93,7 +93,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.PrimitiveIterator;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -123,13 +122,6 @@ public final class ExpressionFormatter
 
     public static String formatIdentifier(String s)
     {
-        // Any identifiers that only have alphanumeric characters and start with an alphabet do not require double quotes or
-        // other special handling. Selectively add double quotes in order to make the common view definition palatable to other engines like Spark.
-        Pattern p = Pattern.compile("^[a-zA-Z][a-zA-Z0-9]*$");
-        boolean hasNoSpecialChar = p.matcher(s).find();
-        if (hasNoSpecialChar) {
-            return s;
-        }
         return '"' + s.replace("\"", "\"\"") + '"';
     }
 

@@ -200,7 +200,7 @@ public class TestHiveCommonViews
         expectedSQL = format("" +
                         "CREATE VIEW %s AS\n" +
                         "SELECT\n" +
-                        "  sum(1) my_sum\n" +
+                        "  \"sum\"(1) my_sum\n" +
                         ", c2\n" +
                         "FROM\n" +
                         "  %s\n" +
@@ -241,7 +241,7 @@ public class TestHiveCommonViews
         String createViewSql5 = format("" +
                         "CREATE VIEW %s AS\n" +
                         "SELECT\n" +
-                        "  sum(1) my_sum\n" +
+                        "  \"sum\"(1) my_sum\n" +
                         ", c2\n" +
                         "FROM\n" +
                         "  %s\n" +
