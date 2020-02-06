@@ -36,6 +36,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.prestosql.plugin.hive.HiveSessionProperties.AWS_IAM_ROLE;
+import static io.prestosql.plugin.hive.HiveSessionProperties.BYPASS_ROLE_CHECK;
 import static io.prestosql.spi.security.AccessDeniedException.denyDropTable;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -44,7 +45,6 @@ public class NetflixAccessControl
         implements ConnectorAccessControl
 {
     private static final Splitter SPLITTER = Splitter.on('=').trimResults().omitEmptyStrings();
-
     private final HiveMetastore metastore;
     private List<String> s3RoleMappings;
 
@@ -206,6 +206,11 @@ public class NetflixAccessControl
 
     private void checkAccess(ConnectorIdentity identity, SchemaTableName tableName)
     {
+        Map<String, String> sessionProperties = identity.getSessionProperties();
+        if (Boolean.parseBoolean(sessionProperties.getOrDefault(BYPASS_ROLE_CHECK, "false"))) {
+            return;
+        }
+
         for (String roleMapping : this.s3RoleMappings) {
             List<String> splitted = SPLITTER.splitToList(roleMapping);
             checkArgument(splitted.size() == 2, "Splitted s3 role mapping should have two elements (e.g., schema=role)");
@@ -213,8 +218,6 @@ public class NetflixAccessControl
             String roleName = splitted.get(1);
             // the user is accessing a schema that has a configured role mapping
             if (Objects.equals(tableName.getSchemaName(), schema)) {
-                Map<String, String> sessionProperties = identity.getSessionProperties();
-
                 if (sessionProperties == null || sessionProperties.isEmpty()) {
                     denyAccess(schema);
                 }

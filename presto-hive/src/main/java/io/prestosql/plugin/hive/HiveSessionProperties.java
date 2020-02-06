@@ -80,6 +80,7 @@ public final class HiveSessionProperties
     private static final String TEMPORARY_STAGING_DIRECTORY_PATH = "temporary_staging_directory_path";
     public static final String AWS_IAM_ROLE = "aws_iam_role";
     private static final String COMMON_VIEW_SUPPORT = "common_view_support";
+    public static final String BYPASS_ROLE_CHECK = "bypass_role_check";
     private final List<PropertyMetadata<?>> sessionProperties;
 
     public enum InsertExistingPartitionsBehavior
@@ -319,6 +320,11 @@ public final class HiveSessionProperties
                         COMMON_VIEW_SUPPORT,
                         "Allow views to be shared with Spark",
                         hiveConfig.isCommonViewSupportEnabled(),
+                        false),
+                booleanProperty(
+                        BYPASS_ROLE_CHECK,
+                        "Should we check if appropriate role is specified to access a schema or bypass it?",
+                        false,
                         false));
     }
 

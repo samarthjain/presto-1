@@ -89,7 +89,7 @@ public class Identity
         Map<String, String> mergedSessionProperties = new HashMap<>();
         for (Map.Entry<String, Map<String, String>> entry : this.sessionPropertiesByCatalog.entrySet()) {
             for (Map.Entry<String, String> keyVal : entry.getValue().entrySet()) {
-                if (keyVal.getKey().startsWith("aws_iam_role")) {
+                if (keyVal.getKey().startsWith("aws_iam_role") || keyVal.getKey().equals("bypass_role_check")) {
                     mergedSessionProperties.put(keyVal.getKey(), keyVal.getValue());
                 }
             }
