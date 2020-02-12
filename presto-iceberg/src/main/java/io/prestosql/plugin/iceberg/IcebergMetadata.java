@@ -532,7 +532,7 @@ public class IcebergMetadata
         ImmutableList.Builder builder = new ImmutableList.Builder();
 
         builder.addAll(table.schema().columns().stream()
-                .map(column -> new ColumnMetadata(column.name(), toPrestoType(column.type(), typeManager)))
+                .map(column -> new ColumnMetadata(column.name(), toPrestoType(column.type(), typeManager), column.doc(), false))
                 .collect(toImmutableList()));
         builder.add(new ColumnMetadata(PATH_COLUMN_NAME, TypeConverter.toPrestoType(Types.StringType.get(), typeManager), null, true));
         return builder.build();
