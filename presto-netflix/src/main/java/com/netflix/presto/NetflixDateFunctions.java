@@ -326,7 +326,7 @@ public final class NetflixDateFunctions
             // Epoch seconds
             return value * 1000L;
         }
-        else if (length >= 13 && length <= 14) {
+        else if (length >= 12 && length <= 14) {
             // Epoch milliseconds
             return value;
         }
