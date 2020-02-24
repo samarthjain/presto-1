@@ -27,6 +27,7 @@ import io.prestosql.spi.connector.InMemoryRecordSet;
 import io.prestosql.spi.connector.RecordCursor;
 import io.prestosql.spi.connector.SystemTable;
 import io.prestosql.spi.predicate.TupleDomain;
+import io.prestosql.spi.type.Decimals;
 import io.prestosql.spi.type.RowType;
 import io.prestosql.spi.type.TimeZoneKey;
 import io.prestosql.spi.type.TypeManager;
@@ -47,6 +48,7 @@ import org.apache.iceberg.util.StructLikeWrapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -315,6 +317,12 @@ public class PartitionTable
         }
         if (type instanceof Types.FloatType) {
             return Float.floatToIntBits((Float) value);
+        }
+        if (type instanceof Types.DecimalType) {
+            Types.DecimalType decimalType = (Types.DecimalType) type;
+            if (decimalType.precision() > Decimals.MAX_SHORT_PRECISION) {
+                return Decimals.encodeScaledValue((BigDecimal) value);
+            }
         }
         return value;
     }
