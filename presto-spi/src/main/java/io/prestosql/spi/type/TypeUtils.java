@@ -19,10 +19,7 @@ import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.block.Block;
 import io.prestosql.spi.block.BlockBuilder;
 
-import java.math.BigDecimal;
-
 import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
-import static io.prestosql.spi.type.Decimals.encodeScaledValue;
 
 public final class TypeUtils
 {
@@ -81,9 +78,6 @@ public final class TypeUtils
             }
             else if (value instanceof String) {
                 slice = Slices.utf8Slice((String) value);
-            }
-            else if (value instanceof BigDecimal) {
-                slice = encodeScaledValue((BigDecimal) value);
             }
             else {
                 slice = (Slice) value;
