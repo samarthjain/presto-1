@@ -33,6 +33,7 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static io.prestosql.spi.predicate.Marker.Bound.ABOVE;
 import static io.prestosql.spi.predicate.Marker.Bound.BELOW;
 import static io.prestosql.spi.predicate.Marker.Bound.EXACTLY;
+import static io.prestosql.spi.type.StandardTypes.DATE;
 import static io.prestosql.spi.type.StandardTypes.VARBINARY;
 import static io.prestosql.spi.type.StandardTypes.VARCHAR;
 import static org.apache.iceberg.expressions.Expressions.alwaysFalse;
@@ -172,6 +173,8 @@ public final class ExpressionConverter
 //            case TIME:
 //            case TIMESTAMP:
 //                return MILLISECONDS.toMicros((Long) marker.getValue());
+            case DATE:
+                return ((Long) marker.getValue()).intValue();
             case VARCHAR:
                 return ((Slice) marker.getValue()).toStringUtf8();
             case VARBINARY:
