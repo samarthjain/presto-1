@@ -122,7 +122,7 @@ final class IcebergUtil
 
     public static List<HiveColumnHandle> getPartitionColumns(Schema schema, PartitionSpec spec, TypeManager typeManager)
     {
-        List<PartitionField> partitionFields = ImmutableList.copyOf(getPartitions(spec, true).keySet());
+        List<PartitionField> partitionFields = ImmutableList.copyOf(getPartitions(spec, false).keySet());
 
         int columnIndex = 0;
         ImmutableList.Builder<HiveColumnHandle> builder = ImmutableList.builder();
