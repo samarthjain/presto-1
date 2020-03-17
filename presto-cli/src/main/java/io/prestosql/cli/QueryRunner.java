@@ -74,6 +74,8 @@ public class QueryRunner
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
+        builder.hostnameVerifier((hostname, sslSession) -> true);
+
         builder.socketFactory(new SocketChannelSocketFactory());
 
         setupTimeouts(builder, 30, SECONDS);
