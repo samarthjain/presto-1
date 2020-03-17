@@ -37,6 +37,8 @@ public final class LineageLoggingUtils
         props.put("genie_name", session.getSystemProperty("genie_job_name", String.class));
 
         props.put("user", session.getUser());
+        props.put("queryId", session.getQueryId().toString());
+
         session.getIdentity().getSessionPropertiesByCatalog().forEach((k, v) -> props.putAll(v));
         return props;
     }
