@@ -61,8 +61,7 @@ public class DruidJdbcClientModule
         Properties connectionProperties = new Properties();
         return new DriverConnectionFactory(
                 new Driver(),
-                //"config.getConnectionUrl()",
-                "jdbc:avatica:remote:url=http://bdp_druid-test-broker-experimental.cluster.us-east-1.prod.cloud.netflix.net:7103/druid/v2/sql/avatica/",
+                config.getConnectionUrl(),
                 Optional.ofNullable(config.getUserCredentialName()),
                 Optional.ofNullable(config.getPasswordCredentialName()),
                 connectionProperties);
