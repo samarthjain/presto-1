@@ -29,7 +29,8 @@ import java.util.Properties;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 
-public class DruidJdbcClientModule extends AbstractConfigurationAwareModule
+public class DruidJdbcClientModule
+        extends AbstractConfigurationAwareModule
 {
     @Override
     public void setup(Binder binder)
