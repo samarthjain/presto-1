@@ -164,6 +164,7 @@
         <module>presto-elasticsearch</module>
         <module>presto-netflix</module>
         <module>presto-iceberg</module>
+        <module>presto-druid</module>
     </modules>
 
     <dependencyManagement>
