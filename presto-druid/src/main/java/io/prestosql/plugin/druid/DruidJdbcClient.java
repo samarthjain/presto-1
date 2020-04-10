@@ -23,7 +23,6 @@ import io.prestosql.plugin.jdbc.JdbcIdentity;
 import io.prestosql.plugin.jdbc.JdbcSplit;
 import io.prestosql.plugin.jdbc.JdbcTableHandle;
 import io.prestosql.plugin.jdbc.JdbcTypeHandle;
-import io.prestosql.plugin.jdbc.QueryBuilder;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.connector.SchemaTableName;
@@ -189,23 +188,27 @@ public class DruidJdbcClient
     }
 
     /**
-     * Overriding this method to handle weirdness in Druid where table names cannot be qualified with the catalog name
-     * when issuing SQL queries.
+     * Overriding this method to handle following weirdness/issues in Druid
+     *
+     * 1) Druid doesn't like table names to be qualified with catalog names in the SQL query. So setting it to an empty string.
+     * 2) As of Druid 0.17, Druid cannot handle parameterized queries. Handled in DruidQueryBuilder.
+     * 3) Druid doesn't like SELECT NULL queries when there are no columns projected.
+     *    They have to be sent as SELECT 1. Handled in DruidQueryBuilder.
      */
     @Override
     public PreparedStatement buildSql(ConnectorSession session, Connection connection, JdbcSplit split, JdbcTableHandle table, List<JdbcColumnHandle> columns)
             throws SQLException
     {
-        return new QueryBuilder(identifierQuote).buildSql(
-                this,
-                session,
-                connection,
-                "", // Druid doesn't like the catalog name set here
-                table.getSchemaName(),
-                table.getTableName(),
-                columns,
-                table.getConstraint(),
-                split.getAdditionalPredicate(),
-                tryApplyLimit(table.getLimit()));
+        return new DruidQueryBuilder(identifierQuote)
+                .buildSql(
+                        this,
+                        session,
+                        connection,
+                        "",
+                        table.getSchemaName(),
+                        table.getTableName(),
+                        columns,
+                        table.getConstraint(),
+                        split.getAdditionalPredicate());
     }
 }
